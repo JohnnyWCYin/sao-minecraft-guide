@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<title>艾恩葛朗特攻略本</title>
+<link rel="stylesheet" href="leaflet.css">
+<link rel="stylesheet" href="style.css">
+<header class="top">
+  <div class="brand"><span class="logo">◆</span> 艾恩葛朗特攻略本 <small>SAO Minecraft</small></div>
+  <nav id="tabs">
+    <button data-tab="map" class="on">🗺️ 互動地圖</button>
+    <button data-tab="items">🎒 物品</button>
+    <button data-tab="mobs">🐺 怪物</button>
+    <button data-tab="quests">📜 任務</button>
+    <button data-tab="recipes">⚒️ 配方</button>
+    <button data-tab="dungeons">🏰 地下城</button>
+    <button data-tab="classes">⚔️ 職業</button>
+    <button data-tab="bosses">👑 世界王</button>
+    <button data-tab="about">ℹ️ 關於</button>
+  </nav>
+</header>
+
+<main>
+  <!-- MAP -->
+  <section id="tab-map" class="tab on">
+    <aside class="side" id="mapSide">
+      <div class="row">
+        <select id="mapSel" aria-label="選擇地圖"></select>
+      </div>
+      <div class="search">
+        <input id="mapSearch" type="search" placeholder="搜尋地點、NPC、怪物、物品…（全樓層）" autocomplete="off">
+        <div id="mapResults" class="results"></div>
+      </div>
+      <div class="row tools">
+        <button id="btnGoto" title="輸入座標跳過去">📍 座標</button>
+        <button id="btnMeasure" title="點兩個位置量距離">📏 量距離</button>
+        <button id="btnShare" title="複製目前位置的連結">🔗 分享</button>
+        <button id="btnMine" title="我的標記">⭐ 我的標記</button>
+        <button id="btnJM" title="JourneyMap／Xaero's Minimap 路點匯入匯出">🧭 路點</button>
+      </div>
+      <div id="jmPanel" class="guide" hidden>
+        <h3>🧭 小地圖路點</h3>
+        <label class="hint" for="jmFile">匯入 JourneyMap 的 WaypointData.dat（v6）或 .json（v5），或 Xaero's Minimap 的 mw$default_1.txt。路點會加入「我的標記」，放在目前這張地圖。</label>
+        <input type="file" id="jmFile" accept=".dat,.json,.txt" multiple>
+        <h4>匯出目前地圖的路點</h4>
+        <div id="jmLayers" class="layers"></div>
+        <div class="row">
+          <button id="jmExport" class="mini">匯出 JourneyMap</button>
+          <button id="xaExport" class="mini">匯出 Xaero's Minimap</button>
+        </div>
+        <details class="hint"><summary>檔案要放在哪裡</summary>
+          <p><b>JourneyMap</b>：<code>.minecraft/journeymap/data/mp/伺服器名稱/waypoints/WaypointData.dat</code></p>
+          <p><b>Xaero's Minimap</b>：<code>.minecraft/xaero/minimap/伺服器名稱/</code> 底下的維度資料夾（通常是 <code>dim%0</code>）裡的 <code>mw$default_1.txt</code>。遊戲要先關掉再換檔。</p>
+          <p>匯出的檔案會取代原本的檔案，記得先備份。想保留原有路點：先匯入你現有的檔案，再用同一種格式匯出，舊路點會一併保留。</p>
+        </details>
+      </div>
+      <form id="gotoForm" class="row" hidden>
+        <input id="gotoIn" type="text" inputmode="numeric" placeholder="X Z，例如 1700 4300" aria-label="遊戲座標" style="flex:1">
+        <button class="mini">前往</button>
+      </form>
+      <div id="guidePanel" class="guide" hidden></div>
+      <h4>圖層 <button id="layAll" class="mini">全開</button><button id="layNone" class="mini">全關</button></h4>
+      <div id="layerList" class="layers"></div>
+      <p class="hint">提示：右鍵（手機長按）地圖可加入自己的標記；滑鼠位置會顯示遊戲座標 X / Z。</p>
+    </aside>
+    <div class="mapwrap">
+      <div id="map"></div>
+      <div id="coord" class="coord">X — · Z —</div>
+      <button id="sideToggle" class="sidetoggle" aria-label="顯示/隱藏側欄">☰</button>
+    </div>
+  </section>
+
+  <section id="tab-items" class="tab">
+    <div class="filters">
+      <input id="itemQ" type="search" placeholder="搜尋物品（中文 / English / Français）">
+      <select id="itemCat"></select>
+      <select id="itemRar"></select>
+      <select id="itemSort"><option value="name">名稱</option><option value="lv">等級高→低</option><option value="rar">稀有度高→低</option></select>
+      <span id="itemCount" class="count"></span>
+    </div>
+    <div id="itemGrid" class="grid"></div>
+    <button id="itemMore" class="more" hidden>顯示更多</button>
+  </section>
+
+  <section id="tab-mobs" class="tab">
+    <div class="filters">
+      <input id="mobQ" type="search" placeholder="搜尋怪物或掉落物">
+      <select id="mobZone"></select>
+      <label><input type="checkbox" id="mobBoss"> 只看首領</label>
+      <span id="mobCount" class="count"></span>
+    </div>
+    <div id="mobGrid" class="grid wide"></div>
+  </section>
+
+  <section id="tab-quests" class="tab"><div id="questBox" class="doc"></div></section>
+  <section id="tab-recipes" class="tab">
+    <div class="filters">
+      <input id="recQ" type="search" placeholder="搜尋配方、材料或 NPC">
+      <select id="recFloor"><option value="">全部樓層</option><option>1</option><option>2</option><option>3</option></select>
+      <span id="recCount" class="count"></span>
+    </div>
+    <div id="recBox" class="doc"></div>
+  </section>
+  <section id="tab-dungeons" class="tab"><div id="dunBox" class="doc"></div></section>
+  <section id="tab-classes" class="tab"><div id="classBox" class="doc"></div></section>
+  <section id="tab-bosses" class="tab"><div id="bossBox" class="doc"></div></section>
+  <section id="tab-about" class="tab"><div id="aboutBox" class="doc"></div></section>
+</main>
+
+<div id="modal" class="modal" hidden><div class="modal-card"><button class="x" aria-label="關閉">✕</button><div id="modalBody"></div></div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" charset="utf-8"></script>
+<script src="data/map.js" charset="utf-8"></script>
+<script src="data/items.js" charset="utf-8"></script>
+<script src="data/mobs.js" charset="utf-8"></script>
+<script src="data/guide.js" charset="utf-8"></script>
+<script src="nbt.js" charset="utf-8"></script>
+<script src="jm.js" charset="utf-8"></script>
+<script src="app.js" charset="utf-8"></script>
+
+</body>
+</html>

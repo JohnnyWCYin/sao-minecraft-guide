@@ -1,0 +1,8 @@
+# API key for the official SAO Minecraft API: never commit
+.sao-api-key
+# downloaded third-party source data and images (rebuild inputs only)
+raw/exiled/
+raw/argo/
+raw/dc/
+raw/img/
+.claude/
