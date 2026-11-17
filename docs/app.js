@@ -610,11 +610,14 @@ async function loadMe() {
   if (inv) {
     OWNED.clear();
     const all = (inv.sections || []).flatMap(s => (s.items || []).map(it => ({ ...it, sec: s.title || s.key })));
-    for (const it of all) { const i = ITEMS.find(x => (it.id != null && x.id == it.id) || x.zh === it.name); if (i) { it.site = i; OWNED.set(i.id, (OWNED.get(i.id) || 0) + (it.amount || 1)); } }
+    // the API's item id is an MMO key ("TYPE:KEY") and floor servers return French names, so match on the name
+    const norm = s => String(s || '').toLowerCase().replace(/[’‘`]/g, "'").normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const byName = new Map(); for (const x of ITEMS) for (const n of [x.zh, x.en, x.fr]) if (n && !byName.has(norm(n))) byName.set(norm(n), x);
+    for (const it of all) { const i = byName.get(norm(it.name)); if (i) { it.site = i; OWNED.set(i.id, (OWNED.get(i.id) || 0) + (it.amount || 1)); } }
     $('#itemOwnWrap').hidden = !OWNED.size;
     if (rendered.items) renderItems();
     h += `<h2>背包（${all.length} 格，${OWNED.size} 種對得上本站物品）</h2><p class="hint">快照時間：${fmtWhen(inv.takenAt)}${inv.server ? ' · ' + esc(inv.server) : ''}。物品頁可以勾「只看我有的」。</p>
-      <div class="tw"><table><tr><th>物品</th><th>數量</th><th>位置</th></tr>${all.map(it => `<tr><td>${it.site ? `<a href="#" data-item="${it.site.id}">${esc(it.name || itemName(it.site))}</a>` : esc(it.name || it.material)}</td><td>${it.amount ?? 1}</td><td>${esc(it.sec || '')}</td></tr>`).join('')}</table></div>`;
+      <div class="tw"><table><tr><th>物品</th><th>數量</th><th>位置</th></tr>${all.map(it => `<tr><td>${it.site ? `<a href="#" data-item="${it.site.id}">${esc(itemName(it.site))}</a>${it.name && it.name !== itemName(it.site) ? `<br><small class="count">${esc(it.name)}</small>` : ''}` : esc(it.name || it.material)}</td><td>${it.amount ?? 1}</td><td>${esc(it.sec || '')}</td></tr>`).join('')}</table></div>`;
   }
   if (tx && tx.length) h += `<h2>最近珂爾紀錄</h2><div class="tw"><table><tr><th>時間</th><th>類型</th><th>金額</th><th>餘額</th><th>來源</th></tr>${tx.slice(0, 20).map(t => `<tr><td>${fmtWhen(t.at)}</td><td>${esc(t.kind)}</td><td style="color:${t.amount < 0 ? 'var(--bad)' : 'var(--ok)'}">${t.amount > 0 ? '+' : ''}${Number(t.amount).toLocaleString()}</td><td>${Number(t.balanceAfter).toLocaleString()}</td><td>${esc(t.source || t.sourceType || '')}</td></tr>`).join('')}</table></div>`;
   if (bad) h += `<p class="hint">部分資料讀不到（${esc(bad.reason.message)}），可能是 key 沒有那個權限。</p>`;
