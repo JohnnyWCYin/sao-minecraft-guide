@@ -16,6 +16,7 @@
     <button data-tab="classes"><span class="ic">⚔️</span>職業</button>
     <button data-tab="bosses"><span class="ic">👑</span>世界王</button>
     <button data-tab="systems"><span class="ic">📖</span>系統</button>
+    <button data-tab="me"><span class="ic">👤</span>我的進度</button>
     <button data-tab="about"><span class="ic">ℹ️</span>關於</button>
   </nav>
   <button id="themeBtn" class="theme" aria-label="切換深色／淺色">◐</button>
@@ -76,6 +77,7 @@
       <input id="itemQ" type="search" placeholder="搜尋物品（中文 / English / Français）">
       <select id="itemCat"></select>
       <select id="itemRar"></select>
+      <label id="itemOwnWrap" hidden><input type="checkbox" id="itemOwn"> 只看我有的</label>
       <select id="itemSort"><option value="name">名稱</option><option value="lv">等級高→低</option><option value="rar">稀有度高→低</option></select>
       <span id="itemCount" class="count"></span>
     </div>
@@ -106,6 +108,7 @@
   <section id="tab-classes" class="tab"><div id="classBox" class="doc"></div></section>
   <section id="tab-bosses" class="tab"><div id="bossBox" class="doc"></div></section>
   <section id="tab-systems" class="tab"><div id="sysBox" class="doc"></div></section>
+  <section id="tab-me" class="tab"><div id="meBox" class="doc"></div></section>
   <section id="tab-about" class="tab"><div id="aboutBox" class="doc"></div></section>
 </main>
 

@@ -22,3 +22,14 @@ node tools/fetch-images.js     # 下載新圖片
 node tools/pack-images.js      # 打包圖片
 node tools/build-pages.js      # 產生 GitHub Pages 用的 docs/
 ```
+
+## 我的進度（官方 API）
+
+網站的「我的進度」分頁可以用你自己的官方 API key 讀取等級、生活職業、背包、珂爾和地下城紀錄。官方 API 只允許官方網站的瀏覽器直接讀取，所以要先部署一個 Cloudflare Worker 做中轉：
+
+1. 到 Cloudflare 註冊並登入主控台。
+2. 「Workers 和 Pages」→「建立」→「建立 Worker」，名稱例如 `sao-proxy`，部署。
+3. 「編輯程式碼」，把 `tools/cloudflare-worker.mjs` 整份貼上，部署。
+4. 把 Worker 網址（`https://sao-proxy.….workers.dev`）和 API key 填進網站的「我的進度」分頁。
+
+中轉只轉送讀取（GET）請求和少數幾個路徑，只接受本站網址的請求，不會儲存 API key。本機測試：`node tools/worker-dev.mjs`。

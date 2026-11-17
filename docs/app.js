@@ -340,10 +340,11 @@ const itemText = ITEMS.map(i => [i.zh, i.en, i.fr, CAT[i.c]].join(' ').toLowerCa
 let itemLimit = 120;
 function renderItems() {
   const q = $('#itemQ').value.trim().toLowerCase(), c = $('#itemCat').value, r = $('#itemRar').value, s = $('#itemSort').value;
-  let list = ITEMS.filter((i, k) => (!q || itemText[k].includes(q)) && (!c || i.c === c) && (!r || i.r === r));
+  const own = $('#itemOwn').checked;
+  let list = ITEMS.filter((i, k) => (!q || itemText[k].includes(q)) && (!c || i.c === c) && (!r || i.r === r) && (!own || OWNED.has(i.id)));
   list.sort(s === 'lv' ? (a, b) => (b.l || 0) - (a.l || 0) : s === 'rar' ? (a, b) => (RAR[b.r]?.[1] || 0) - (RAR[a.r]?.[1] || 0) : (a, b) => itemName(a).localeCompare(itemName(b), 'zh-Hant'));
   $('#itemCount').textContent = `${list.length} 件`;
-  $('#itemGrid').innerHTML = list.slice(0, itemLimit).map(i => `<div class="card" style="${rarCss(i.r)}" data-item="${i.id}">${itemImg(i) ? `<img loading="lazy" src="${itemImg(i)}" alt="">` : ''}<div class="body"><div class="t">${esc(itemName(i))}</div><div class="s">${i.zh ? esc(i.en) + '<br>' : ''}<span class="rar">${RAR[i.r]?.[0] || ''}</span> · ${esc(CAT[i.c] || i.c)}${i.l ? ' · 等級 ' + i.l : ''}${i.game ? ' <span class="tag">遊戲內</span>' : ''}</div></div></div>`).join('');
+  $('#itemGrid').innerHTML = list.slice(0, itemLimit).map(i => `<div class="card" style="${rarCss(i.r)}" data-item="${i.id}">${itemImg(i) ? `<img loading="lazy" src="${itemImg(i)}" alt="">` : ''}<div class="body"><div class="t">${esc(itemName(i))}${ownTag(i)}</div><div class="s">${i.zh ? esc(i.en) + '<br>' : ''}<span class="rar">${RAR[i.r]?.[0] || ''}</span> · ${esc(CAT[i.c] || i.c)}${i.l ? ' · 等級 ' + i.l : ''}${i.game ? ' <span class="tag">遊戲內</span>' : ''}</div></div></div>`).join('');
   $('#itemMore').hidden = list.length <= itemLimit;
 }
 const SRC = { build: '官方百科有收錄', tienda: '商店出售', receta: '可以製作', visto: '遊戲內見過', compra: '可以收購' };
@@ -355,7 +356,7 @@ function itemModal(id) {
   const pot = (GUIDE.sets.potions || []).find(s => s.name === i.en);
   const recipes = Object.entries(GUIDE.recipes).flatMap(([npc, v]) => v.items.filter(r => r[0] == i.id || r[1] === i.en).map(r => [npc, v.floor, r]));
   const uses = Object.entries(GUIDE.recipes).flatMap(([npc, v]) => v.items.filter(r => r[3]?.some(m => m[0] === i.en)).map(r => r[1]));
-  modal(`<div class="head">${itemImg(i) ? `<img src="${itemImg(i)}" alt="">` : ''}<div><h2 style="${rarCss(i.r)}" class="rar">${esc(itemName(i))}</h2><div class="sub">${esc([i.zh ? i.en : null, i.fr].filter(Boolean).join(' · '))}</div><div><span class="tag">${RAR[i.r]?.[0] || '?'}</span>${zhTag(i)}<span class="tag">${esc(CAT[i.c] || i.c)}</span>${i.l ? `<span class="tag">等級 ${i.l}</span>` : ''}</div></div></div>
+  modal(`<div class="head">${itemImg(i) ? `<img src="${itemImg(i)}" alt="">` : ''}<div><h2 style="${rarCss(i.r)}" class="rar">${esc(itemName(i))}</h2><div class="sub">${esc([i.zh ? i.en : null, i.fr].filter(Boolean).join(' · '))}</div><div><span class="tag">${RAR[i.r]?.[0] || '?'}</span>${zhTag(i)}${ownTag(i)}<span class="tag">${esc(CAT[i.c] || i.c)}</span>${i.l ? `<span class="tag">等級 ${i.l}</span>` : ''}</div></div></div>
   ${Object.keys(i.s || {}).length ? `<h3>屬性</h3><ul>${Object.entries(i.s).map(([k, v]) => `<li>${esc(statLine(k, v))}</li>`).join('')}</ul>` : ''}
   ${set ? `<h3>套裝：${esc(set.name)}</h3><ul>${set.tiers.map(t => `<li>${t[0]} 件：${esc(t[1])}</li>`).join('')}</ul>` : ''}
   ${pot ? `<h3>效果</h3><ul>${pot.effects.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
@@ -371,7 +372,7 @@ Object.assign(RENDER, {
     const cats = [...new Set(ITEMS.map(i => i.c))].sort((a, b) => (CAT[a] || a).localeCompare(CAT[b] || b, 'zh-Hant'));
     $('#itemCat').innerHTML = '<option value="">全部分類</option>' + cats.map(c => `<option value="${c}">${esc(CAT[c] || c)}</option>`).join('');
     $('#itemRar').innerHTML = '<option value="">全部稀有度</option>' + Object.entries(RAR).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('');
-    ['#itemQ', '#itemCat', '#itemRar', '#itemSort'].forEach(s => $(s).addEventListener('input', () => { itemLimit = 120; renderItems(); }));
+    ['#itemQ', '#itemCat', '#itemRar', '#itemSort', '#itemOwn'].forEach(s => $(s).addEventListener('input', () => { itemLimit = 120; renderItems(); }));
     $('#itemMore').onclick = () => { itemLimit += 240; renderItems(); };
     $('#itemGrid').onclick = e => { const c = e.target.closest('[data-item]'); if (c) itemModal(c.dataset.item); };
     $('#itemCount').textContent = '載入圖示中…';
@@ -530,6 +531,95 @@ RENDER.systems = () => {
   const R = GUIDE.runes || [], byId = new Map(ITEMS.map(i => [i.id, i]));
   $('#runeTable').innerHTML = `<div class="tw"><table><tr><th>符文</th><th>稀有度</th><th>效果</th></tr>${R.map(r => `<tr><td>${byId.has(r.id) ? `<a href="#" data-item="${r.id}">${esc(r.zh)}</a>` : esc(r.zh)}</td><td>${esc(r.r)}</td><td>${esc(r.b).replace(/(^|、)(-[^、]+)/g, '$1<span style="color:var(--bad)">$2</span>')}</td></tr>`).join('')}</table></div>`;
 };
+
+/* ================= MY PROGRESS (official API via the user's own Cloudflare Worker) ================= */
+// The official API only allows its own website in browsers, so requests go through a Worker the user deploys
+// (tools/cloudflare-worker.mjs). The key stays in this browser and is sent only to that Worker.
+const OWNED = new Map(); // item id -> amount, from the last inventory read
+const ownTag = i => OWNED.has(i.id) ? `<span class="tag own">✓ 有 ${OWNED.get(i.id)}</span>` : '';
+const meCfg = { get: () => ({ url: store.get('meUrl', ''), key: store.get('meKey', '') || (() => { try { return sessionStorage.getItem('meKey') || ''; } catch { return ''; } })() }) };
+const fmtMs = ms => ms == null ? '—' : `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
+const fmtWhen = s => { const d = new Date(s); return isNaN(d) ? '—' : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const val = v => v == null || v === '' ? '—' : typeof v === 'object' ? esc(v.name ?? v.display ?? v.level ?? JSON.stringify(v)) : esc(v);
+async function meFetch(path) {
+  const { url, key } = meCfg.get();
+  const r = await fetch(url.replace(/\/+$/, '') + path, { headers: { Authorization: 'Bearer ' + key } });
+  if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { status: r.status });
+  return (await r.json()).data;
+}
+RENDER.me = () => {
+  const { url, key } = meCfg.get();
+  $('#meBox').innerHTML = `<h1>👤 我的進度</h1>
+  <p class="hint">用你自己的官方 API key 讀取等級、生活職業、背包、珂爾和地下城紀錄。key 只存在這個瀏覽器，只會傳給你自己的中轉（Cloudflare Worker）。官方 API 目前沒有任務進度。</p>
+  <form id="meForm" class="guide">
+    <label class="hint" for="meUrl">中轉網址（你的 Cloudflare Worker）</label>
+    <input id="meUrl" type="text" inputmode="url" placeholder="https://sao-proxy.你的名字.workers.dev" value="${esc(url)}" autocomplete="off">
+    <label class="hint" for="meKey">官方 API key</label>
+    <input id="meKey" type="password" placeholder="sao_live_…" value="${esc(key)}" autocomplete="off">
+    <label class="hint"><input type="checkbox" id="meRemember" ${store.get('meKey', '') || !key ? 'checked' : ''}> 記住在這個瀏覽器（取消勾選就只記到關閉分頁為止）</label>
+    <div class="row"><button class="mini">讀取進度</button><button type="button" id="meForget" class="mini">清除 key</button></div>
+  </form>
+  <details><summary>怎樣設定中轉（只要做一次）</summary><ol>
+    <li>到 Cloudflare 免費註冊，登入主控台。</li>
+    <li>左邊選「Workers 和 Pages」→「建立」→「建立 Worker」，名稱例如 <code>sao-proxy</code> → 部署。</li>
+    <li>按「編輯程式碼」，把 GitHub repo 裡 <code>tools/cloudflare-worker.mjs</code> 的內容整份貼上，按「部署」。</li>
+    <li>把它給你的網址（<code>https://sao-proxy.….workers.dev</code>）貼到上面。</li>
+    <li>到官方開發者頁面開一把新的 API key，權限只勾 profile、inventory、economy、dungeons。</li></ol>
+    <p class="hint">這個功能只能在 GitHub Pages 版網站使用。</p></details>
+  <div id="meOut"></div>`;
+  $('#meForm').onsubmit = e => {
+    e.preventDefault();
+    const u = $('#meUrl').value.trim(), k = $('#meKey').value.trim();
+    if (!/^https:\/\/[\w.-]+(\/[\w./-]*)?$|^http:\/\/localhost(:\d+)?$/.test(u)) return toast('中轉網址要以 https:// 開頭');
+    if (!/^sao_[\w-]{10,200}$/.test(k)) return toast('API key 格式不對（要以 sao_ 開頭）');
+    store.set('meUrl', u);
+    if ($('#meRemember').checked) { store.set('meKey', k); try { sessionStorage.removeItem('meKey'); } catch { } }
+    else { store.set('meKey', ''); try { sessionStorage.setItem('meKey', k); } catch { } }
+    loadMe();
+  };
+  $('#meForget').onclick = () => { store.set('meKey', ''); try { sessionStorage.removeItem('meKey'); } catch { } $('#meKey').value = ''; OWNED.clear(); $('#meOut').innerHTML = ''; toast('已清除 API key'); };
+  $('#meOut').addEventListener('click', e => { const a = e.target.closest('[data-item]'); if (a) { e.preventDefault(); itemModal(a.dataset.item); } });
+  if (url && key) loadMe();
+};
+async function loadMe() {
+  const out = $('#meOut'); out.innerHTML = '<p class="hint">讀取中…</p>';
+  const P = ['/me', '/me/balance', '/me/dungeons', '/me/inventory', '/me/transactions'];
+  const res = await Promise.allSettled(P.map(meFetch));
+  const bad = res.find(r => r.status === 'rejected');
+  if (res.every(r => r.status === 'rejected')) {
+    const st = bad.reason.status;
+    out.innerHTML = `<p class="note">讀取失敗：${st === 401 ? 'API key 不對或已撤銷。' : st === 403 ? '中轉拒絕了這個網站（檢查 Worker 裡的 ALLOWED_ORIGINS）。' : st ? 'HTTP ' + st : '連不上中轉。請確認網址正確、Worker 已部署，以及你是在 GitHub Pages 版網站。'}</p>`;
+    return;
+  }
+  const [me, bal, dun, inv, tx] = res.map(r => r.status === 'fulfilled' ? r.value : null);
+  let h = '';
+  if (me) {
+    const jobs = (me.jobs || []).map(j => `<li>${val(j.name ?? j.job ?? j.id)} ${j.level != null ? '· Lv ' + esc(j.level) : ''}</li>`).join('');
+    h += `<h2>${esc(me.name)}</h2><div class="tw"><table>
+      <tr><th>等級</th><td>${val(me.level)}</td><th>經驗</th><td>${val(me.xp)}</td></tr>
+      <tr><th>職業</th><td>${val(me.className)}</td><th>生活職業</th><td>${val(me.job)}</td></tr>
+      <tr><th>Rank</th><td>${val(me.rank)}</td><th>公會</th><td>${val(me.guild)}</td></tr>
+      <tr><th>遊戲時數</th><td>${val(me.playtimeHours)}</td><th>珂爾</th><td>${bal ? `<b>${Number(bal.balance).toLocaleString()}</b> ${esc(bal.currency || '')}` : '—'}</td></tr></table></div>
+      ${jobs ? `<h3>生活職業等級</h3><ul>${jobs}</ul>` : ''}
+      <p class="hint">資料時間：${me.updatedAt ? fmtWhen(me.updatedAt) : '未有（在大廳時是空的，進入樓層後官方才會更新）'}</p>`;
+  }
+  if (dun) {
+    h += `<h2>地下城紀錄</h2>${(dun.records || []).length ? `<div class="tw"><table><tr><th>地下城</th><th>難度</th><th>最佳</th><th>單人</th><th>組隊</th><th>排名</th><th>次數</th></tr>${dun.records.map(r => `<tr><td>${esc(r.name || r.dungeon)}<br><small class="count">${esc(r.floor || '')}</small></td><td>${esc(r.difficulty || '')}</td><td>${fmtMs(r.bestMs)}</td><td>${fmtMs(r.soloMs)}</td><td>${fmtMs(r.groupMs)}</td><td>${r.rank ? `${r.rank} / ${r.total ?? '?'}` : '—'}</td><td>${r.runs ?? '—'}</td></tr>`).join('')}</table></div>` : '<p class="hint">還沒有紀錄。</p>'}`;
+    if ((dun.recentRuns || []).length) h += `<h3>最近挑戰</h3><ul>${dun.recentRuns.slice(0, 10).map(r => `<li>${r.success ? '✅' : '❌'} ${esc(r.dungeon)} ${esc(r.difficulty || '')} · ${fmtMs(r.durationMs)} · ${r.groupSize || 1} 人 · ${fmtWhen(r.finishedAt)}</li>`).join('')}</ul>`;
+  }
+  if (inv) {
+    OWNED.clear();
+    const all = (inv.sections || []).flatMap(s => (s.items || []).map(it => ({ ...it, sec: s.title || s.key })));
+    for (const it of all) { const i = ITEMS.find(x => (it.id != null && x.id == it.id) || x.zh === it.name); if (i) { it.site = i; OWNED.set(i.id, (OWNED.get(i.id) || 0) + (it.amount || 1)); } }
+    $('#itemOwnWrap').hidden = !OWNED.size;
+    if (rendered.items) renderItems();
+    h += `<h2>背包（${all.length} 格，${OWNED.size} 種對得上本站物品）</h2><p class="hint">快照時間：${fmtWhen(inv.takenAt)}${inv.server ? ' · ' + esc(inv.server) : ''}。物品頁可以勾「只看我有的」。</p>
+      <div class="tw"><table><tr><th>物品</th><th>數量</th><th>位置</th></tr>${all.map(it => `<tr><td>${it.site ? `<a href="#" data-item="${it.site.id}">${esc(it.name || itemName(it.site))}</a>` : esc(it.name || it.material)}</td><td>${it.amount ?? 1}</td><td>${esc(it.sec || '')}</td></tr>`).join('')}</table></div>`;
+  }
+  if (tx && tx.length) h += `<h2>最近珂爾紀錄</h2><div class="tw"><table><tr><th>時間</th><th>類型</th><th>金額</th><th>餘額</th><th>來源</th></tr>${tx.slice(0, 20).map(t => `<tr><td>${fmtWhen(t.at)}</td><td>${esc(t.kind)}</td><td style="color:${t.amount < 0 ? 'var(--bad)' : 'var(--ok)'}">${t.amount > 0 ? '+' : ''}${Number(t.amount).toLocaleString()}</td><td>${Number(t.balanceAfter).toLocaleString()}</td><td>${esc(t.source || t.sourceType || '')}</td></tr>`).join('')}</table></div>`;
+  if (bad) h += `<p class="hint">部分資料讀不到（${esc(bad.reason.message)}），可能是 key 沒有那個權限。</p>`;
+  out.innerHTML = h;
+}
 
 RENDER.about = () => {
   const n = MD.points.length;
