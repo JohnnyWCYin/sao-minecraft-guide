@@ -15,6 +15,7 @@ textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border
 .addmine input{width:150px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.55 system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
