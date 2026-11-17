@@ -405,13 +405,22 @@ RENDER.mobs = () => {
 
 /* ================= QUESTS ================= */
 const iz = n => esc(GUIDE.zhItems[n] ? `${GUIDE.zhItems[n]}（${n}）` : n);
+// quest progress the viewer ticks off, kept in this browser
+const qDone = new Set(store.get('questDone', []));
+const doneBox = (k, label) => `<input type="checkbox" class="qdone" data-q="${esc(k)}" ${qDone.has(k) ? 'checked' : ''} aria-label="${esc(label)} 已完成">`;
 RENDER.quests = () => {
-  let h = '<h1>📜 任務</h1>';
+  let h = '<h1>📜 任務</h1><p class="hint">勾選已完成的任務，進度只存在這個瀏覽器。</p>';
   for (const [fl, qs] of Object.entries(GUIDE.mainq)) {
-    h += `<h2>第 ${fl} 層主線（${qs.length} 個）</h2>`;
+    const ch = (GUIDE.chain || {})[fl];
+    if (ch) {
+      const keys = ch.map(q => `c${fl}:${q.t}`), n = keys.filter(k => qDone.has(k)).length;
+      h += `<h2>第 ${fl} 層主線一覽（${ch.length} 個）</h2><div class="qprog" data-fl="c${fl}"><div class="bar"><i style="width:${n / ch.length * 100}%"></i></div><span>已完成 ${n} / ${ch.length}</span></div>
+      <div class="tw"><table class="qchain"><tr><th></th><th>任務</th><th>NPC</th><th>目標</th><th>獎勵</th></tr>${ch.map((q, i) => `<tr class="${qDone.has(keys[i]) ? 'done' : ''}"><td>${doneBox(keys[i], q.t)}</td><td><b>${esc(q.t)}</b>${q.x != null ? ` <button class="maplink" data-focus="ch-${fl}-${i}">📍 X ${q.x} Z ${q.z}</button>` : ''}</td><td>${esc(q.n || '—')}</td><td>${(q.o || []).map(esc).join('<br>') || '—'}</td><td>${q.xp ? q.xp.toLocaleString() + ' 經驗' : ''}<br>${q.col ? q.col.toLocaleString() + ' 珂爾' : ''}</td></tr>`).join('')}</table></div>`;
+    }
+    h += `<h2>第 ${fl} 層主線${ch ? '詳細步驟' : ''}（${qs.length} 個）</h2>`;
     qs.forEach((q, qi) => {
       const zq = GUIDE.questZh[q.t] || {};
-      h += `<details><summary>${q.n ? '#' + q.n + ' ' : ''}${esc(zq.zh || q.t)} <small class="count">${esc(q.t)} · NPC：${esc(q.npc || '?')} · 等級 ${esc(q.lv || '?')}</small></summary>
+      h += `<details><summary>${ch ? '' : doneBox(`m${fl}:${q.t}`, zq.zh || q.t) + ' '}${q.n ? '#' + q.n + ' ' : ''}${esc(zq.zh || q.t)} <small class="count">${esc(q.t)} · NPC：${esc(q.npc || '?')} · 等級 ${esc(q.lv || '?')}</small></summary>
       ${zq.d ? `<p><i>${esc(zq.d)}</i></p>` : ''}<ol>${(q.s || []).map((s, si) => `<li>${esc(s[0])}${s[1] != null ? ` <button class="maplink" data-focus="mq-${fl}-${qi}-${si}">📍 X ${s[1]} Z ${s[2]}</button>` : ''}</li>`).join('')}</ol>
       ${q.rw ? `<p>🎁 獎勵：${esc(q.rw)}</p>` : ''}${q.tip ? `<p>💡 ${esc(q.tip)}</p>` : ''}</details>`;
     });
@@ -422,6 +431,14 @@ RENDER.quests = () => {
     h += `<h2>第 ${fl} 層支線（${qs.length} 個）</h2><div class="tw"><table><tr><th>NPC</th><th>地點</th><th>需要</th><th>獎勵</th><th></th></tr>${qs.map(q => `<tr><td>${esc(q[0])}</td><td>${esc(towns[q[1]] || q[1])}</td><td>${(q[4] || []).map(n => iz(n[0]) + ' ×' + n[1]).join('<br>')}</td><td>${q[5] ? q[5] + ' 經驗' : ''}${q[6] ? '<br>' + q[6] + ' 珂爾' : ''}</td><td>${q[2] != null ? `<button class="maplink" data-focus="argo-q-${fl}-${esc(q[0])}">📍</button>` : ''}</td></tr>`).join('')}</table></div>`;
   }
   $('#questBox').innerHTML = h;
+  $('#questBox').addEventListener('change', e => {
+    const c = e.target.closest('.qdone'); if (!c) return;
+    c.checked ? qDone.add(c.dataset.q) : qDone.delete(c.dataset.q); store.set('questDone', [...qDone]);
+    c.closest('tr')?.classList.toggle('done', c.checked);
+    const fl = c.dataset.q.split(':')[0], bar = $(`.qprog[data-fl="${fl}"]`);
+    if (bar) { const all = [...document.querySelectorAll(`.qdone[data-q^="${fl}:"]`)], n = all.filter(x => x.checked).length; bar.querySelector('i').style.width = n / all.length * 100 + '%'; bar.querySelector('span').textContent = `已完成 ${n} / ${all.length}`; }
+  });
+  $('#questBox').addEventListener('click', e => { if (e.target.closest('.qdone')) e.stopPropagation(); }, true);
 };
 
 /* ================= RECIPES ================= */

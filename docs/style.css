@@ -190,6 +190,10 @@ tbody tr:hover{background:var(--panel2)}
 .tag.own{background:color-mix(in srgb,var(--ok) 18%,var(--panel2));border-color:var(--ok);color:var(--text);margin-left:6px}
 #meForm{display:flex;flex-direction:column;gap:6px;max-width:560px}
 #meForm input[type=text],#meForm input[type=password]{width:100%}
+.qprog{display:flex;align-items:center;gap:10px;margin:6px 0 10px;font-weight:700;color:var(--muted)}
+.qprog .bar{flex:1;max-width:320px;height:8px;background:var(--panel2);border:1px solid var(--line2);transform:skewX(-30deg);overflow:hidden}
+.qprog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--hp),var(--hp2));transition:width .3s}
+table.qchain tr.done td{opacity:.5}table.qchain tr.done b{text-decoration:line-through}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
 .chips a{padding:4px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--text);text-decoration:none;font-weight:600;transition:border-color .12s,background .12s}
 .chips a:hover{border-color:var(--sel);background:color-mix(in srgb,var(--sel) 14%,var(--panel2))}

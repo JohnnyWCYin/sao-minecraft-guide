@@ -114,6 +114,9 @@ layers.push({ id: 'zonas', name: '怪物分佈範圍', color: '#ff7a59', icon: '
 
 // main quest steps with coords
 const mainq = A.SAO_MAINQ;
+// full main-quest chains (names, NPC, objectives, rewards, some coordinates) collected by hand: raw/quests-f*.json
+const chain = Object.fromEntries(['2', '3'].filter(fl => fs.existsSync(D + `quests-f${fl}.json`)).map(fl => [fl, JSON.parse(fs.readFileSync(D + `quests-f${fl}.json`, 'utf8'))]));
+for (const [fl, qs] of Object.entries(chain)) qs.forEach((q, i) => { if (q.x != null) extra.push({ id: `ch-${fl}-${i}`, nivel: fl, capa: 'principal', nombre: q.t, nota: [(q.o || []).join('；'), q.n ? 'NPC：' + q.n : '', `獎勵：${q.xp} 經驗、${q.col} 珂爾`].filter(Boolean).join('。'), wx: q.x, wz: q.z }); });
 for (const [fl, qs] of Object.entries(mainq)) qs.forEach((q, qi) => (q.s || []).forEach((s, si) => { if (s[1] != null) extra.push({ id: `mq-${fl}-${qi}-${si}`, nivel: fl, capa: 'principal', nombre: `${(ZH.quests[q.t] || {}).zh || q.t}・${si + 1}`, nota: s[0], wx: s[1], wz: s[2], q: qi, src: 'argo' }); }));
 layers.push({ id: 'principal', name: '主線任務步驟', color: '#c9a7ff', icon: 'quest' });
 
@@ -175,7 +178,7 @@ W('mobs', 'MOBS', { zones: zonesEx.map(z => ({ id: z.id, name: T(z.nombre), fr: 
 
 // ---------- GUIDE (argo, already zh) ----------
 W('guide', 'GUIDE', {
-  mainq, questZh: ZH.quests, sideq: Object.fromEntries(['1', '2', '3'].map(fl => [fl, (F[fl].quests || []).map(q => q.args || [q.npc, q.town, q.x, q.z, q.need, q.xp, q.money, q.bonus, q.raw])])),
+  mainq, chain, questZh: ZH.quests, sideq: Object.fromEntries(['1', '2', '3'].map(fl => [fl, (F[fl].quests || []).map(q => q.args || [q.npc, q.town, q.x, q.z, q.need, q.xp, q.money, q.bonus, q.raw])])),
   towns: Object.fromEntries(['1', '2', '3'].map(fl => [fl, F[fl].towns])), zones: Object.fromEntries(['1', '2', '3'].map(fl => [fl, F[fl].zones])),
   recipes: A.SAO_RECIPES, classes: A.SAO_CLASSES, skills: A.SAO_GAMESKILLS, bosses: A.SAO_BOSSES, events: A.SAO_EVENTS, sets: A.SAO_SETS,
   runes: WK.runes || [], zhItems: { ...zhExtra, ...zhByEn }, zhNpcs: ZH.npcs, zhPlaces: ZH.places, buyback: A.SAO_BUYBACK,
