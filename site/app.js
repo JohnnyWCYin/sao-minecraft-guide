@@ -8,6 +8,19 @@ function copy(text) { try { navigator.clipboard.writeText(text).then(() => toast
 function modal(html) { $('#modalBody').innerHTML = html; $('#modal').hidden = false; }
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('.x')) $('#modal').hidden = true; });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#modal').hidden = true; });
+// theme toggle: explicit choice overrides the OS / host setting
+const isDark = () => (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'dark';
+if (store.get('theme')) document.documentElement.dataset.theme = store.get('theme');
+$('#themeBtn').onclick = () => { const t = isDark() ? 'light' : 'dark'; document.documentElement.dataset.theme = t; store.set('theme', t); };
+// SAO-style ripple on buttons and cards
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('button,.card'); if (!b || b.closest('.leaflet-container') || b.id === 'themeBtn') return;
+  const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height), s = document.createElement('span');
+  if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+  b.style.overflow = 'hidden'; s.className = 'ripple';
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
+  b.append(s); setTimeout(() => s.remove(), 550);
+});
 
 const RAR = { c: ['普通', 1], b: ['稀有', 2], a: ['史詩', 3], s: ['傳說', 4], splus: ['神話', 5], splusplus: ['神聖', 6], ss: ['特殊', 7] };
 const rarCss = r => `--rc:var(--r-${r || 'c'})`;

@@ -6,3 +6,5 @@ raw/argo/
 raw/dc/
 raw/img/
 .claude/
+# personal data read from the official API
+raw/api/

@@ -1,19 +1,23 @@
 <title>艾恩葛朗特攻略本</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="leaflet.css">
 <link rel="stylesheet" href="style.css">
+<div id="intro" aria-hidden="true"><div class="tunnel"></div><b>LINK START</b></div>
+<script>try{if(sessionStorage.getItem('introSeen'))document.getElementById('intro').remove();else sessionStorage.setItem('introSeen','1')}catch(e){}</script>
 <header class="top">
-  <div class="brand"><span class="logo">◆</span> 艾恩葛朗特攻略本 <small>SAO Minecraft</small></div>
+  <div class="brand"><b><span class="logo">◆</span>艾恩葛朗特攻略本</b><span class="hp">SAO MC <span class="bar"><i></i></span> F1–F3</span></div>
   <nav id="tabs">
-    <button data-tab="map" class="on">🗺️ 互動地圖</button>
-    <button data-tab="items">🎒 物品</button>
-    <button data-tab="mobs">🐺 怪物</button>
-    <button data-tab="quests">📜 任務</button>
-    <button data-tab="recipes">⚒️ 配方</button>
-    <button data-tab="dungeons">🏰 地下城</button>
-    <button data-tab="classes">⚔️ 職業</button>
-    <button data-tab="bosses">👑 世界王</button>
-    <button data-tab="about">ℹ️ 關於</button>
+    <button data-tab="map" class="on"><span class="ic">🗺️</span>互動地圖</button>
+    <button data-tab="items"><span class="ic">🎒</span>物品</button>
+    <button data-tab="mobs"><span class="ic">🐺</span>怪物</button>
+    <button data-tab="quests"><span class="ic">📜</span>任務</button>
+    <button data-tab="recipes"><span class="ic">⚒️</span>配方</button>
+    <button data-tab="dungeons"><span class="ic">🏰</span>地下城</button>
+    <button data-tab="classes"><span class="ic">⚔️</span>職業</button>
+    <button data-tab="bosses"><span class="ic">👑</span>世界王</button>
+    <button data-tab="about"><span class="ic">ℹ️</span>關於</button>
   </nav>
+  <button id="themeBtn" class="theme" aria-label="切換深色／淺色">◐</button>
 </header>
 
 <main>
