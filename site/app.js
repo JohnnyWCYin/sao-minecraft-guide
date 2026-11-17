@@ -1,7 +1,6 @@
-/* 艾恩葛朗特攻略本 — data: data/*.js (built by tools/build.js from both source guides) */
+/* 艾恩葛朗特攻略本 — data: data/*.js (built by tools/build.js) */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const EXO = 'https://exiled-order.pages.dev', ARGO = 'https://cheng-1001.github.io/ArgoStrategyGuide/';
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } } };
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 1800); }
 function copy(text) { try { navigator.clipboard.writeText(text).then(() => toast('已複製：' + text), () => toast(text)); } catch { toast(text); } }
@@ -40,7 +39,7 @@ const MD = window.MAPDATA;
 const LAYER = {
   regiones: ['區域・城鎮', '#d9a7ff'], poi: ['地標・傳送點', '#8df0a0'], jefes: ['首領・地城入口', '#ff6b6b'], spawns: ['首領重生點', '#ff3d6e'],
   mobs: ['怪物', '#ff9f6b'], zonas: ['怪物分佈範圍', '#ff7a59'], tiendas: ['商店・工匠・配方', '#7ee0c3'], compradores: ['戰利品收購商', '#ffd166'],
-  pnj: ['NPC', '#7fd9ff'], npcs: ['功能 NPC（攻略本）', '#5cc8ff'], misiones: ['支線任務 NPC', '#ffe066'], principal: ['主線任務步驟', '#c9a7ff'],
+  pnj: ['NPC', '#7fd9ff'], npcs: ['功能 NPC', '#5cc8ff'], misiones: ['支線任務 NPC', '#ffe066'], principal: ['主線任務步驟', '#c9a7ff'],
   biomas: ['生態區域', '#9be564'], recursos: ['採集點', '#e8b46b'], objetivos: ['任務目標', '#ff8fd8'], beta: ['測試版資料（可能已改）', '#c3a6ff'],
 };
 const ICON = { boss: '💀', dungeon: '🏰', mob: '🐾', merchant: '🛒', smith: '⚒️', buyer: '💰', resource: '⛏️', region: '🏘️', special: '⭐', poi: '⭐', pnj: '💬', guard: '🛡️', pk: '⚔️', unknown: '❓', accessory: '💍', beta: '🧪' };
@@ -90,7 +89,7 @@ function popupHtml(p) {
   if (p.compraObjetos) h += `<b>收購</b>` + list(p.compraObjetos, o => `<li>${iz(o.nombre)} — ${esc(o.precio || '')}</li>`);
   else if (p.compra) h += `<div class="note">收購：${esc(p.compra)}</div>`;
   if (p.beta) h += `<div class="cred">⚠ 測試版資料，位置可能已改</div>`;
-  h += `<div class="cred">${p.src === 'argo' ? '資料：阿爾戈的攻略本' : p.src === 'dc' ? '資料：DelayedCode 互動地圖' : '資料：EXILED ORDER' + (p.creditos ? '（' + esc(p.creditos) + '）' : '')}</div></div>`;
+  h += '</div>';
   return h;
 }
 const MOBZH = {};
@@ -535,13 +534,10 @@ RENDER.systems = () => {
 RENDER.about = () => {
   const n = MD.points.length;
   $('#aboutBox').innerHTML = `<h1>ℹ️ 關於本攻略</h1>
-  <p>整合三個玩家攻略站的資料，重新整理成一個網站：</p>
-  <ul><li><a href="${ARGO}" target="_blank" rel="noopener">阿爾戈的攻略本（SAO 地圖及攻略 中文版）</a>：任務、配方、職業、世界王、官方中文名、怪物分佈範圍、NPC 座標。</li>
-  <li><a href="https://delayedcode.github.io/SAO-MC-Interactive-Map/index.html" target="_blank" rel="noopener">DelayedCode SAO MC Interactive Map</a>：補充第 1、3 層的生態區域、首領重生點、採集點等標記（重複的已略過）。</li>
-  <li><a href="${EXO}/wiki" target="_blank" rel="noopener">EXILED ORDER 物品百科與互動地圖</a>：${ITEMS.length} 件物品、${MOBS.mobs.length} 隻怪物、第 1～3 層與地下城地圖、${MD.maps.filter(m => m.parent).length} 張地下城地圖及攻略步驟。</li></ul>
+  <p>SAO Minecraft 的中文攻略：互動地圖、物品、怪物、任務、配方、地下城、職業、世界王和遊戲系統，全部整理在同一個網站。</p>
   <h2>收錄內容</h2><ul><li>地圖標記：${n} 個（${MD.maps.length} 張地圖）</li><li>物品：${ITEMS.length} 件</li><li>怪物：${MOBS.mobs.length} 隻</li><li>主線任務：${Object.values(GUIDE.mainq).reduce((a, q) => a + q.length, 0)} 個</li><li>配方 NPC：${Object.keys(GUIDE.recipes).length} 位</li></ul>
-  <h2>互動地圖功能</h2><ul><li>第 1～3 層大地圖＋18 張地下城／任務地圖，兩個來源的標記合併顯示，可逐層開關。</li><li>全樓層搜尋：地點、NPC、怪物、甚至「哪裡賣／收購某物品」。</li><li>滑鼠即時顯示遊戲座標；任何標記都可以一鍵複製座標或分享連結。</li><li>輸入座標跳轉、量兩點距離。</li><li>右鍵加入自己的標記（存在瀏覽器），可匯出／匯入。</li><li>地下城逐步攻略：按步驟自動跳到對應位置；顯示建議路線。</li><li>物品、怪物、任務、配方頁都可以一鍵跳到地圖位置。</li></ul>
-  <p class="hint">物品圖示、怪物圖片由來源網站提供。遊戲資料以遊戲內為準。非官方網站。</p>`;
+  <h2>互動地圖功能</h2><ul><li>第 1～3 層大地圖＋18 張地下城／任務地圖，標記可逐層開關。</li><li>全樓層搜尋：地點、NPC、怪物、甚至「哪裡賣／收購某物品」。</li><li>滑鼠即時顯示遊戲座標；任何標記都可以一鍵複製座標或分享連結。</li><li>輸入座標跳轉、量兩點距離。</li><li>右鍵加入自己的標記（存在瀏覽器），可匯出／匯入。</li><li>地下城逐步攻略：按步驟自動跳到對應位置；顯示建議路線。</li><li>物品、怪物、任務、配方頁都可以一鍵跳到地圖位置。</li></ul>
+  <p class="hint">遊戲資料以遊戲內為準。非官方網站。</p>`;
 };
 
 /* ================= BOOT ================= */

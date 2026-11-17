@@ -137,7 +137,16 @@ layers.push({ id: 'principal', name: '主線任務步驟', color: '#c9a7ff', ico
 }
 
 fs.mkdirSync(OUT + '/data', { recursive: true });
-const W = (f, name, obj) => fs.writeFileSync(`${OUT}/data/${f}.js`, `window.${name}=${JSON.stringify(obj)};\n`);
+// the site does not name the guides/wikis it was built from: reword notes that mention them
+const NOSRC = [
+  [/位置取自參考互動地圖（玩家製作的 Beta 資料）。/g, '位置來自玩家製作的 Beta 資料。'], [/wiki（[\d-]+）把這一段寫成/g, '有資料把這一段寫成'],
+  [/wiki 第 2 層地圖標的/g, '第 2 層地圖標的'], [/網站的怪物區域/g, '怪物區域'], [/（wiki 圖鑑，/g, '（圖鑑：'],
+  [/wiki 上三位 NPC/g, '三位 NPC'], [/wiki 只有一位/g, '目前只知道一位'], [/原本網站依 wiki 舊支線 NPC 暫稱/g, '依舊支線 NPC 暫稱'],
+  [/wiki 的 Pumba 頁面說/g, 'Pumba 的資料說'], [/wiki 未標示區域/g, '未標示區域'], [/（wiki）/g, ''],
+  [/官方網站沒有寫等級和出現方式。wiki 的獨特怪物表列出/g, '官方沒有寫等級和出現方式；獨特怪物表列出'],
+  [/（參考互動地圖）/g, ''], [/參考互動地圖/g, '玩家地圖']];
+const noSrc = j => NOSRC.reduce((t, [a, b]) => t.replace(a, b), j);
+const W = (f, name, obj) => fs.writeFileSync(`${OUT}/data/${f}.js`, `window.${name}=${noSrc(JSON.stringify(obj))};\n`);
 for (const p of [...points, ...extra]) { // our translation where no official Chinese name was found
   const z = !p.zh && !/[㐀-鿿]/.test(p.nombre || '') && (zhExtra[p.nombre] || zhExtra[p.en]);
   if (z) { p.zh = z; p.zhU = 1; }
