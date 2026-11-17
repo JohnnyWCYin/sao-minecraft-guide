@@ -1,5 +1,4 @@
-/* 遊戲系統整理：內容由本站根據 SAO Minecraft Wiki（saominecraft.wiki.gg）重新整理改寫，資料以遊戲內為準。
-   每段 src 是 wiki 的頁面名稱；html 是本站自己寫的摘要。 */
+/* 遊戲系統整理（本站自己寫的摘要），資料以遊戲內為準。src 是整理時參考的頁面名稱，不會顯示在網站上。 */
 window.SYSTEMS = [
 { id: 'start', ic: '🚀', t: '新手入門', src: 'Start Here!/zh-tw', html: `
 <ul>
@@ -28,7 +27,7 @@ window.SYSTEMS = [
 <tr><td>資源</td><td>魔力、耐力（上限與回復）</td><td>施法用魔力；耐力另計</td></tr>
 <tr><td>功能</td><td>技能急速、移動速度、治療加成</td><td>縮短技能冷卻；走路速度；治療隊友的量（薩滿）</td></tr>
 </table></div>
-<p class="hint">wiki 標明「護甲穿透」「鈍擊威力」「射程」目前遊戲內未使用。</p>
+<p class="hint">「護甲穿透」「鈍擊威力」「射程」目前遊戲內未使用。</p>
 <h3>防禦公式</h3>
 <p><code>減傷 % = 防禦 ÷ (防禦 + 60) × 80%</code>，所以防禦再高減傷也不會超過 80%。</p>
 <p class="calc">輸入防禦值：<input id="defIn" type="number" min="0" value="36" style="width:90px"> → 減傷 <b id="defOut"></b></p>` },
@@ -67,7 +66,7 @@ window.SYSTEMS = [
 <li>部分區域只能經由特定時段開啟的轉移門進入，錯過就要等下一輪。</li>
 <li>植物各有生長時段：只在白天、只在晚上、任何時間，或只在晴朗的夜晚（月光）。</li>
 <li>在錯的時段收成可能會減產、失敗重來，或得到較低品質的道具。</li>
-<li>季節（春夏秋冬）目前只影響種植，詳細效果 wiki 尚未公布。</li>
+<li>季節（春夏秋冬）目前只影響種植，詳細效果尚未公布。</li>
 </ul>` },
 
 { id: 'dungeon', ic: '🏰', t: '地城與團隊副本', src: 'Donjons & Raids/zh-tw', html: `
@@ -90,7 +89,7 @@ window.SYSTEMS = [
 <h3>英雄祝福</h3>
 <p>只能在記憶迷宮裡用的能力，來自 Alicization 篇的角色。把該角色的<b>記憶碎片</b>還給他就能永久解鎖：</p>
 <ul><li><b>被動祝福</b>：整趟迷宮一直生效。</li><li><b>主動祝福</b>：戰鬥中自己施放，有冷卻時間，難打的房間留著用。</li></ul>
-<p class="hint">每個角色需要的碎片數、碎片在哪裡拿，wiki 目前還沒寫。</p>` },
+<p class="hint">每個角色需要的碎片數、碎片在哪裡拿，目前還沒公布。</p>` },
 
 { id: 'underworld', ic: '🌌', t: '破碎地下世界與 Cardinal 中繼站', src: 'Fractured Underworld/zh-tw', html: `
 <p>第一個大型資料片。地下世界大戰之後，Alicization 的世界碎成一塊塊浮空島。現在已<b>改為選擇性內容</b>，主線不再強制你去，但生活職業還是會用到。</p>
@@ -109,7 +108,7 @@ window.SYSTEMS = [
 <tr><td>UNIT-003</td><td>3</td><td>15</td><td>⭐⭐⭐⭐⭐</td><td>未開放</td></tr></table></div>` },
 
 { id: 'wboss', ic: '🐉', t: '世界頭目祭壇（規劃中）', src: 'World Boss/zh-tw', html: `
-<p>wiki 描述的另一種世界頭目：要先在破碎地下世界蓋一座<b>世界頭目祭壇</b>。流程是升級 Cardinal 中繼站 → 解鎖「系統創造」→ 製作祭壇 → 在每週指定時段加入戰鬥。</p>
+<p>另一種世界頭目：要先在破碎地下世界蓋一座<b>世界頭目祭壇</b>。流程是升級 Cardinal 中繼站 → 解鎖「系統創造」→ 製作祭壇 → 在每週指定時段加入戰鬥。</p>
 <div class="tw"><table><tr><th>頭目</th><th>建議等級</th><th>難度</th></tr>
 <tr><td>Fatal Scythe</td><td>15+</td><td>中等</td></tr><tr><td>Gleam Eyes</td><td>20+</td><td>困難</td></tr>
 <tr><td>Skull Reaper</td><td>30+</td><td>極限</td></tr><tr><td>管理員</td><td>35+</td><td>極限</td></tr><tr><td>Heathcliff</td><td>40+</td><td>極限</td></tr></table></div>
@@ -138,13 +137,13 @@ window.SYSTEMS = [
 <div id="merchantTimes"></div>` },
 
 { id: 'tower', ic: '🗼', t: '艾恩葛朗特之塔', src: 'Tower of Aincrad/zh-tw', html: `
-<p>塔防模式：擋住一波比一波強的艾恩葛朗特怪物。難度分簡單、普通、困難、極限，越難出現越高樓層的怪和精英、小頭目，獎勵也越稀有，還有排行榜。波數和獎勵細節 wiki 尚未公布。</p>` },
+<p>塔防模式：擋住一波比一波強的艾恩葛朗特怪物。難度分簡單、普通、困難、極限，越難出現越高樓層的怪和精英、小頭目，獎勵也越稀有，還有排行榜。波數和獎勵細節尚未公布。</p>` },
 
 { id: 'runes', ic: '💠', t: '符文一覽', src: 'Runes/zh-tw', runes: true, html: `<p>符文可以鑲進裝備加屬性，有的同時帶減益（紅字）。拆下符文要用符文移除器。</p><div id="runeTable"></div>` },
 
 { id: 'other', ic: '🎲', t: '召喚、寵物、稱號', src: 'Invocation System/zh-tw', html: `
 <ul><li><b>召喚（抽卡）</b>：常駐卡池每天有免費抽；活動卡池只在活動期間開放，用 Triggium 抽，有活動限定獎勵。可以單抽或五連抽，可能抽到道具、寵物、外觀。</li>
-<li><b>棲地與寵物</b>：在個人島嶼上把特定元素擺在一起組成棲地（固定配方），就會吸引寵物入住，寵物提供主動加成。配方 wiki 還沒公布。</li>
+<li><b>棲地與寵物</b>：在個人島嶼上把特定元素擺在一起組成棲地（固定配方），就會吸引寵物入住，寵物提供主動加成。配方還沒公布。</li>
 <li><b>稱號</b>：顯示在名字旁的外觀獎勵，來自任務、NPC 委託、活動、成就（擊殺數、等級、合成）和探索隱藏地點。</li>
 <li><b>公會</b>：系統正在整個重做。</li></ul>` },
 

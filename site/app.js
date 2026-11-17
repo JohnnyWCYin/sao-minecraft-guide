@@ -45,7 +45,7 @@ const LAYER = {
 };
 const ICON = { boss: '💀', dungeon: '🏰', mob: '🐾', merchant: '🛒', smith: '⚒️', buyer: '💰', resource: '⛏️', region: '🏘️', special: '⭐', poi: '⭐', pnj: '💬', guard: '🛡️', pk: '⚔️', unknown: '❓', accessory: '💍', beta: '🧪' };
 const CAPA_ICON = { biomas: '🌿', zonas: '🐾', spawns: '💀', misiones: '❗', npcs: '🧑', principal: '📜', objetivos: '🎯', recursos: '⛏️' };
-const zhTag = o => o.zhU ? '<span class="tag" title="官方未有中文名，這是本站自己的翻譯">非官方譯名</span>' : o.zhW ? '<span class="tag" title="中文名取自 SAO Minecraft Wiki 的繁體中文頁面">Wiki 譯名</span>' : '';
+const zhTag = o => o.zhU ? '<span class="tag" title="官方未有中文名，這是本站自己的翻譯">非官方譯名</span>' : o.zhW ? '<span class="tag" title="官方未有中文名，這是玩家社群的翻譯">社群譯名</span>' : '';
 const pName = p => p.zh || p.nombre;
 const pSub = p => [p.zh && p.zh !== p.nombre ? p.nombre : null, p.en && p.en !== pName(p) ? p.en : null, p.original].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' · ');
 const ll = (x, z) => [-z, x];
@@ -391,7 +391,7 @@ function renderMobs() {
 function mobModal(id) {
   const m = MOBS.mobs.find(x => x.id === id); if (!m) return;
   const onMap = MD.points.filter(p => p.id === m.mapa || p.id === m.comprador || ((p.capa === 'mobs' || p.capa === 'jefes' || p.capa === 'spawns') && [p.nombre, p.es, p.en, p.original].some(n => n && (n === m.original || n === m.nombre))));
-  modal(`<div class="head">${imgM(m.img) ? `<img src="${imgM(m.img)}" alt="" style="image-rendering:auto;width:110px;height:110px">` : ''}<div><h2>${m.jefe ? '👑 ' : ''}${esc(m.zh || m.nombre)}</h2><div class="sub">${esc([m.zh ? m.nombre : null, m.original].filter(Boolean).join(' · '))}</div><div><span class="tag">${esc(zoneName[m.zona] || m.zona)}</span>${zhTag(m)}${m.codice ? `<span class="tag">圖鑑 #${m.codice}</span>` : ''}${m.beh ? `<span class="tag">${esc(m.beh)}</span>` : ''}${m.stars ? `<span class="tag stars" title="難度（Wiki）">${'★'.repeat(m.stars)}${'☆'.repeat(5 - m.stars)}</span>` : ''}</div></div></div>
+  modal(`<div class="head">${imgM(m.img) ? `<img src="${imgM(m.img)}" alt="" style="image-rendering:auto;width:110px;height:110px">` : ''}<div><h2>${m.jefe ? '👑 ' : ''}${esc(m.zh || m.nombre)}</h2><div class="sub">${esc([m.zh ? m.nombre : null, m.original].filter(Boolean).join(' · '))}</div><div><span class="tag">${esc(zoneName[m.zona] || m.zona)}</span>${zhTag(m)}${m.codice ? `<span class="tag">圖鑑 #${m.codice}</span>` : ''}${m.beh ? `<span class="tag">${esc(m.beh)}</span>` : ''}${m.stars ? `<span class="tag stars" title="難度">${'★'.repeat(m.stars)}${'☆'.repeat(5 - m.stars)}</span>` : ''}</div></div></div>
   ${m.texto ? `<p>${esc(m.texto)}</p>` : ''}${m.pista ? `<p>🔎 <b>圖鑑提示：</b>${esc(m.pista)}</p>` : ''}
   <h3>掉落</h3><table>${m.botin.map(b => `<tr><td>${imgM(b.img) ? `<img src="${imgM(b.img)}" width="24" height="24" alt="" style="image-rendering:pixelated;vertical-align:middle"> ` : ''}${esc(b.zh ? b.zh + '（' + b.name + '）' : b.name)}</td><td>${b.prob}%</td></tr>`).join('')}</table>
   ${onMap.length ? `<h3>地圖</h3><p>${onMap.map(p => `<button class="maplink" data-focus="${esc(p.id)}">📍 ${esc(pName(p))}（${esc(mapById[p.nivel]?.name || p.nivel)}）</button>`).join(' ')}</p>` : ''}`);
@@ -511,13 +511,12 @@ function renderBosses() {
 }
 
 /* ================= ABOUT ================= */
-/* ================= SYSTEMS (summaries of the fan wiki) ================= */
-const WIKI = 'https://saominecraft.wiki.gg/wiki/';
+/* ================= SYSTEMS ================= */
 RENDER.systems = () => {
   const box = $('#sysBox');
-  box.innerHTML = `<h1>📖 遊戲系統</h1><p class="hint">本站根據 <a href="${WIKI}首頁" target="_blank" rel="noopener">SAO Minecraft Wiki</a> 重新整理，未公布的部分不列出。資料以遊戲內為準。</p>
+  box.innerHTML = `<h1>📖 遊戲系統</h1><p class="hint">未公布的部分不列出，資料以遊戲內為準。</p>
   <nav class="chips">${SYSTEMS.map(s => `<a href="#sys-${s.id}" data-sys="${s.id}">${s.ic} ${esc(s.t)}</a>`).join('')}</nav>` +
-    SYSTEMS.map((s, i) => `<details id="sys-${s.id}"${i < 2 ? ' open' : ''}><summary>${s.ic} ${esc(s.t)}</summary>${s.html}<p class="cred">資料來源：<a href="${WIKI}${encodeURIComponent(s.src.replace(/ /g, '_'))}" target="_blank" rel="noopener">SAO Minecraft Wiki</a></p></details>`).join('');
+    SYSTEMS.map((s, i) => `<details id="sys-${s.id}"${i < 2 ? ' open' : ''}><summary>${s.ic} ${esc(s.t)}</summary>${s.html}</details>`).join('');
   box.addEventListener('click', e => { const a = e.target.closest('[data-item]'); if (a) { e.preventDefault(); itemModal(a.dataset.item); } });
   box.querySelector('.chips').onclick = e => { const a = e.target.closest('[data-sys]'); if (!a) return; e.preventDefault(); const d = $('#sys-' + a.dataset.sys); d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   // defense calculator
