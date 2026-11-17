@@ -8,3 +8,4 @@ raw/img/
 .claude/
 # personal data read from the official API
 raw/api/
+raw/wikigg/

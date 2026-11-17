@@ -43,6 +43,9 @@ const ZH = A.SAO_ZHNAMES, zhById = {}, zhByEn = {};
 for (const it of ZH.items) for (const id of it.ids || []) { const [t, k] = id.split('|'); if (t === 'i') zhByEn[k] = it.zh; else zhById[k] = it.zh; if (it.en) zhByEn[it.en] = it.zh; }
 const zhOf = (enName, id) => (id != null && zhById[id]) || zhByEn[enName] || ZH.mobsByName[enName] || ZH.npcs[enName] || ZH.places[enName] || null;
 // our own translations (raw/zh-extra-*.tsv, "English<TAB>中文"), used only where no official Chinese name exists
+// Chinese names + bestiary facts from the fan wiki's zh-tw pages (tools/wikigg.js)
+const WK = fs.existsSync(D + 'wikigg-zh.json') ? JSON.parse(fs.readFileSync(D + 'wikigg-zh.json', 'utf8')) : { items: {}, mobs: {} };
+const wkMob = m => Object.values(WK.mobs).find(w => (m.zh && w.zh === m.zh) || (w.en && w.en.toLowerCase() === String(m.nombre).toLowerCase()));
 const zhExtra = {};
 for (const f of fs.readdirSync(D).filter(n => /^zh-extra-\d+\.tsv$/.test(n)))
   for (const l of fs.readFileSync(D + f, 'utf8').split(/\r?\n/)) { const [en, zh] = l.split('\t'); if (en && zh) zhExtra[en.trim()] = zh.trim(); }
@@ -148,7 +151,7 @@ const items = [...(WT.get('r') || []), ...(WT.get('n') || [])].map(it => {
   const o = { ...it, ...(itemOver[it.id] || {}) }, juego = { ...(it.juego || {}), ...((itemOver[it.id] || {}).juego || {}) };
   const enName = lore[it.n] || un[it.n] || it.n;
   const off = zhById[it.id] || zhByEn[enName] || zhByFr[normX(it.fr)];
-  return { id: it.id, zh: off || zhExtra[enName] || null, ...(!off && zhExtra[enName] ? { zhU: 1 } : {}), en: enName, fr: it.fr, c: o.c, r: o.r, l: o.l, s: o.s, lore: lore[it.lore] || un[it.lore] || null, img: !!it.img, game: !!juego.nuevo, src: deepT(juego.f || []) };
+  return { id: it.id, zh: off || WK.items[it.id] || zhExtra[enName] || null, ...(off ? {} : WK.items[it.id] ? { zhW: 1 } : zhExtra[enName] ? { zhU: 1 } : {}), en: enName, fr: it.fr, c: o.c, r: o.r, l: o.l, s: o.s, lore: lore[it.lore] || un[it.lore] || null, img: !!it.img, game: !!juego.nuevo, src: deepT(juego.f || []) };
 });
 const IDX = L(EX('itemIndex'));
 W('items', 'ITEMS', items);
@@ -158,7 +161,7 @@ const MB = L(EX('mobs'));
 const loot = MB.get('t') || {}, zonesEx = MB.get('n') || [];
 const itemZhLc = {}; // loot names differ in letter case from item names ("Boar hide" / "Boar Hide")
 for (const [en, zh] of [...Object.entries(zhExtra), ...items.filter(i => i.zh).map(i => [i.en, i.zh]), ...Object.entries(zhByEn)]) itemZhLc[en.toLowerCase()] = zh;
-const mobs = (MB.get('l') || []).map(m => { const [zh, u] = mobZh(m); return { ...deepT(m), zh, ...(u ? { zhU: 1 } : {}), botin: (m.botin || []).map(b => { const name = T((loot[b.objeto] || {}).nombre || b.objeto); return { ...b, name, zh: itemZhLc[String(name).toLowerCase()] || null, img: (loot[b.objeto] || {}).img }; }) }; });
+const mobs = (MB.get('l') || []).map(m => { const [zh, u] = mobZh(m); const w = wkMob({ zh, nombre: m.nombre }); return { ...deepT(m), zh, ...(u ? { zhU: 1 } : {}), ...(w ? { beh: /動攻擊/.test(w.beh) ? '主動攻擊' : w.beh, stars: w.stars } : {}), botin: (m.botin || []).map(b => { const name = T((loot[b.objeto] || {}).nombre || b.objeto); return { ...b, name, zh: itemZhLc[String(name).toLowerCase()] || null, img: (loot[b.objeto] || {}).img }; }) }; });
 W('mobs', 'MOBS', { zones: zonesEx.map(z => ({ id: z.id, name: T(z.nombre), fr: z.original })), mobs });
 
 // ---------- GUIDE (argo, already zh) ----------
@@ -166,7 +169,7 @@ W('guide', 'GUIDE', {
   mainq, questZh: ZH.quests, sideq: Object.fromEntries(['1', '2', '3'].map(fl => [fl, (F[fl].quests || []).map(q => q.args || [q.npc, q.town, q.x, q.z, q.need, q.xp, q.money, q.bonus, q.raw])])),
   towns: Object.fromEntries(['1', '2', '3'].map(fl => [fl, F[fl].towns])), zones: Object.fromEntries(['1', '2', '3'].map(fl => [fl, F[fl].zones])),
   recipes: A.SAO_RECIPES, classes: A.SAO_CLASSES, skills: A.SAO_GAMESKILLS, bosses: A.SAO_BOSSES, events: A.SAO_EVENTS, sets: A.SAO_SETS,
-  zhItems: { ...zhExtra, ...zhByEn }, zhNpcs: ZH.npcs, zhPlaces: ZH.places, buyback: A.SAO_BUYBACK,
+  runes: WK.runes || [], zhItems: { ...zhExtra, ...zhByEn }, zhNpcs: ZH.npcs, zhPlaces: ZH.places, buyback: A.SAO_BUYBACK,
 });
 
 const top = Object.entries(miss).sort((a, b) => b[1] - a[1]);
