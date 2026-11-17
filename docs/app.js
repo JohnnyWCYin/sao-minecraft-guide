@@ -537,7 +537,9 @@ RENDER.systems = () => {
 // (tools/cloudflare-worker.mjs). The key stays in this browser and is sent only to that Worker.
 const OWNED = new Map(); // item id -> amount, from the last inventory read
 const ownTag = i => OWNED.has(i.id) ? `<span class="tag own">✓ 有 ${OWNED.get(i.id)}</span>` : '';
-const meCfg = { get: () => ({ url: store.get('meUrl', ''), key: store.get('meKey', '') || (() => { try { return sessionStorage.getItem('meKey') || ''; } catch { return ''; } })() }) };
+// served by the Cloudflare Worker itself (wrangler.jsonc): the relay is this site's own /api
+const SAME_RELAY = /\.workers\.dev$/.test(location.hostname) || location.port === '8787' ? location.origin + '/api' : '';
+const meCfg = { get: () => ({ url: store.get('meUrl', '') || SAME_RELAY, key: store.get('meKey', '') || (() => { try { return sessionStorage.getItem('meKey') || ''; } catch { return ''; } })() }) };
 const fmtMs = ms => ms == null ? '—' : `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 const fmtWhen = s => { const d = new Date(s); return isNaN(d) ? '—' : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const val = v => v == null || v === '' ? '—' : typeof v === 'object' ? esc(v.name ?? v.display ?? v.level ?? JSON.stringify(v)) : esc(v);
@@ -552,8 +554,8 @@ RENDER.me = () => {
   $('#meBox').innerHTML = `<h1>👤 我的進度</h1>
   <p class="hint">用你自己的官方 API key 讀取等級、生活職業、背包、珂爾和地下城紀錄。key 只存在這個瀏覽器，只會傳給你自己的中轉（Cloudflare Worker）。官方 API 目前沒有任務進度。</p>
   <form id="meForm" class="guide">
-    <label class="hint" for="meUrl">中轉網址（你的 Cloudflare Worker）</label>
-    <input id="meUrl" type="text" inputmode="url" placeholder="https://sao-proxy.你的名字.workers.dev" value="${esc(url)}" autocomplete="off">
+    <div ${SAME_RELAY ? 'hidden' : ''}><label class="hint" for="meUrl">中轉網址（你的 Cloudflare Worker，結尾加 /api）</label>
+    <input id="meUrl" type="text" inputmode="url" placeholder="https://saominecraft.你的名字.workers.dev/api" value="${esc(url)}" autocomplete="off"></div>
     <label class="hint" for="meKey">官方 API key</label>
     <input id="meKey" type="password" placeholder="sao_live_…" value="${esc(key)}" autocomplete="off">
     <label class="hint"><input type="checkbox" id="meRemember" ${store.get('meKey', '') || !key ? 'checked' : ''}> 記住在這個瀏覽器（取消勾選就只記到關閉分頁為止）</label>
@@ -570,9 +572,9 @@ RENDER.me = () => {
   $('#meForm').onsubmit = e => {
     e.preventDefault();
     const u = $('#meUrl').value.trim(), k = $('#meKey').value.trim();
-    if (!/^https:\/\/[\w.-]+(\/[\w./-]*)?$|^http:\/\/localhost(:\d+)?$/.test(u)) return toast('中轉網址要以 https:// 開頭');
+    if (!/^https:\/\/[\w.-]+(\/[\w./-]*)?$|^http:\/\/localhost(:\d+)?(\/[\w./-]*)?$/.test(u)) return toast('中轉網址要以 https:// 開頭');
     if (!/^sao_[\w-]{10,200}$/.test(k)) return toast('API key 格式不對（要以 sao_ 開頭）');
-    store.set('meUrl', u);
+    store.set('meUrl', u === SAME_RELAY ? '' : u);
     if ($('#meRemember').checked) { store.set('meKey', k); try { sessionStorage.removeItem('meKey'); } catch { } }
     else { store.set('meKey', ''); try { sessionStorage.setItem('meKey', k); } catch { } }
     loadMe();

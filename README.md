@@ -23,13 +23,10 @@ node tools/pack-images.js      # 打包圖片
 node tools/build-pages.js      # 產生 GitHub Pages 用的 docs/
 ```
 
-## 我的進度（官方 API）
+## Cloudflare 部署（網站＋官方 API 中轉）
 
-網站的「我的進度」分頁可以用你自己的官方 API key 讀取等級、生活職業、背包、珂爾和地下城紀錄。官方 API 只允許官方網站的瀏覽器直接讀取，所以要先部署一個 Cloudflare Worker 做中轉：
+`wrangler.jsonc` 把整個網站（`docs/`）和官方 API 中轉（`/api/...`，程式在 `tools/cloudflare-worker.mjs`）放在同一個 Cloudflare Worker。在 Cloudflare 主控台把 Worker 連上這個 GitHub repo（建置指令留空，部署指令 `npx wrangler deploy`），之後每次 push 都會自動部署。
 
-1. 到 Cloudflare 註冊並登入主控台。
-2. 「Workers 和 Pages」→「建立」→「建立 Worker」，名稱例如 `sao-proxy`，部署。
-3. 「編輯程式碼」，把 `tools/cloudflare-worker.mjs` 整份貼上，部署。
-4. 把 Worker 網址（`https://sao-proxy.….workers.dev`）和 API key 填進網站的「我的進度」分頁。
+在 Cloudflare 版網站，「我的進度」只要填 API key。GitHub Pages 版要另外填中轉網址：`https://saominecraft.johnnywcyin.workers.dev/api`。
 
-中轉只轉送讀取（GET）請求和少數幾個路徑，只接受本站網址的請求，不會儲存 API key。本機測試：`node tools/worker-dev.mjs`。
+中轉只轉送讀取（GET）請求和少數幾個路徑，只接受本站的請求，不會儲存 API key。本機測試：`node tools/worker-dev.mjs`，開 http://localhost:8787 。

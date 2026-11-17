@@ -1,0 +1,14 @@
+{
+  // Cloudflare Worker：網站（docs/）＋官方 API 中轉（/api/...），連上 GitHub 後每次 push 自動部署
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "saominecraft",
+  "main": "tools/cloudflare-worker.mjs",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./docs",
+    "binding": "ASSETS",
+    // only the API paths run the Worker code; everything else is served straight from docs/
+    "run_worker_first": ["/api/*", "/status", "/me", "/me/*"]
+  },
+  "observability": { "enabled": true }
+}
