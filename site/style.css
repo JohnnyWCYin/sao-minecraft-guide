@@ -106,6 +106,34 @@ input[type=checkbox]{accent-color:var(--sel);width:16px;height:16px;vertical-ali
 #map{position:absolute;inset:0;background:#070b12}
 .coord{position:absolute;right:10px;bottom:10px;z-index:500;background:#0b1220d9;color:#e9eef8;border:1px solid #3a4d72;padding:3px 12px;border-radius:999px;font:700 14px var(--ui);letter-spacing:.06em;font-variant-numeric:tabular-nums;pointer-events:none}
 .sidetoggle{display:none;position:absolute;right:10px;top:10px;z-index:600;width:40px;height:40px;background:var(--panel);border:1px solid var(--line);border-radius:50%;font-size:18px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel2)}
+.seg button{background:none;border:0;padding:3px 12px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--sel);color:var(--on-sel)}
+.ptview{align-items:center;justify-content:space-between}
+/* right-hand detail panel */
+.detail{position:absolute;top:10px;right:10px;bottom:56px;z-index:700;width:min(360px,calc(100% - 20px));overflow:auto;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line2);border-top:3px solid var(--sel);border-radius:14px;padding:12px 14px;box-shadow:0 12px 36px var(--shadow);animation:slideIn .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes slideIn{from{opacity:0;transform:translateX(24px)}}
+.detail .dhead{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.detail .dmap{flex:1;color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.06em}
+.dbtn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-weight:700;color:var(--muted);transition:background .12s,color .12s,transform .1s}
+.dbtn:hover{border-color:var(--sel);color:var(--text)}.dbtn:active{transform:scale(.92)}
+.dbtn.on{background:var(--sel);border-color:var(--sel);color:var(--on-sel)}
+.detail .pop h3{font-size:20px}
+.detail .pop ul{max-height:none}
+.mk{position:relative}
+.mk.seen{opacity:.45;filter:grayscale(.6)}
+.mk .fav{position:absolute;top:-8px;right:-8px;font-size:12px;color:#ffd23f;text-shadow:0 0 3px #000,0 0 2px #000}
+/* floor picker */
+.floorgrid{display:grid;width:100%;grid-template-columns:repeat(10,1fr);gap:5px;margin:10px 0}
+.floorgrid .fl{position:relative;aspect-ratio:1.4;max-width:100%;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-weight:700;font-size:15px;display:grid;place-items:center}
+.floorgrid .fl i{position:absolute;bottom:1px;font-size:9px;font-style:normal;opacity:.6}
+.floorgrid .fl.open{background:color-mix(in srgb,var(--ok) 30%,var(--panel2));border-color:var(--ok);color:var(--text);cursor:pointer}
+.floorgrid .fl.open:hover{transform:translateY(-2px);box-shadow:0 0 12px color-mix(in srgb,var(--ok) 50%,transparent)}
+.floorgrid .fl.cur{outline:2px solid var(--sel)}
+.floorgrid .fl:disabled{cursor:not-allowed;opacity:.55}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--panel2);border:1px solid var(--line)}
+.legend i.open{background:color-mix(in srgb,var(--ok) 30%,var(--panel2));border-color:var(--ok)}
 .guide{background:var(--panel2);border:1px solid var(--line);border-top:3px solid var(--sel);border-radius:10px;padding:10px;animation:tabIn .25s ease-out}
 .guide h3{margin:0 0 6px;font-size:16px}
 .guide ol{margin:0;padding-left:20px}
@@ -246,6 +274,9 @@ table.qchain tr.done td{opacity:.5}table.qchain tr.done b{text-decoration:line-t
   .side.open{transform:none}
   #tab-map{position:relative}
   .sidetoggle{display:grid;place-items:center}
+  .detail{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:55%;animation-name:sheetIn}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(30px)}}
+  .floorgrid{grid-template-columns:repeat(5,1fr)}
   .grid,.filters,.doc{padding-left:16px;padding-right:16px}
   .toast{top:110px}
 }

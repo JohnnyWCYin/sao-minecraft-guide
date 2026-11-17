@@ -71,7 +71,7 @@ sel.onchange = () => showMap(sel.value);
 function icon(p) {
   const c = (LAYER[p.capa] || ['', '#aaa'])[1];
   const e = CAPA_ICON[p.capa] || ICON[p.tipo] || '•';
-  return L.divIcon({ className: '', html: `<div class="mk" style="background:${c}">${e}</div>`, iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -12] });
+  return L.divIcon({ className: '', html: `<div class="mk${seen.has(p.id) ? ' seen' : ''}" style="background:${c}">${e}${fav.has(p.id) ? '<b class="fav">★</b>' : ''}</div>`, iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -12] });
 }
 const fmtXYZ = p => `X ${Math.round(p.wx)}${p.wy != null ? ' · Y ' + Math.round(p.wy) : ''} · Z ${Math.round(p.wz)}`;
 function popupHtml(p) {
@@ -95,6 +95,68 @@ function popupHtml(p) {
 const MOBZH = {};
 for (const m of window.MOBS.mobs) if (m.zh) MOBZH[m.nombre] = m.zh;
 
+/* ---- favourites / seen (this browser only) and the 全部 / 待辦 / 最愛 filter ---- */
+const fav = new Set(store.get('favPts', [])), seen = new Set(store.get('seenPts', []));
+let ptView = store.get('ptView', 'all');
+const ptFilter = p => ptView === 'todo' ? !seen.has(p.id) : ptView === 'fav' ? fav.has(p.id) : true;
+function renderPtView() {
+  document.querySelectorAll('#ptView button').forEach(b => b.classList.toggle('on', b.dataset.v === ptView));
+  const ps = ptsByMap[cur?.id] || [];
+  $('#ptCount').textContent = `已看過 ${ps.filter(p => seen.has(p.id)).length} / ${ps.length} · 最愛 ${ps.filter(p => fav.has(p.id)).length}`;
+}
+$('#ptView').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (!b) return; ptView = b.dataset.v; store.set('ptView', ptView); showMap(cur.id, true); });
+function toggleMark(set, key, id) {
+  set.has(id) ? set.delete(id) : set.add(id); store.set(key, [...set]);
+  const p = ptById[id]; markers[id]?.setIcon(icon(p)); renderPtView();
+  if (detailId === id) openDetail(p);
+  if (!ptFilter(p) && markers[id]) { map.removeLayer(markers[id]); groups[p.capa]?.removeLayer(markers[id]); delete markers[id]; }
+}
+
+/* ---- right-hand detail panel (replaces map popups for points) ---- */
+let detailId = null;
+function openDetail(p) {
+  if (!p) return; detailId = p.id;
+  const d = $('#detail'); d.hidden = false;
+  d.innerHTML = `<div class="dhead"><span class="dmap">${esc((mapById[p.nivel] || {}).name || p.nivel)}</span>
+    <button class="dbtn${fav.has(p.id) ? ' on' : ''}" data-fav="${esc(p.id)}" title="加入最愛" aria-label="加入最愛">★</button>
+    <button class="dbtn${seen.has(p.id) ? ' on' : ''}" data-seen="${esc(p.id)}" title="標記為已看過" aria-label="標記為已看過">✓</button>
+    <button class="dbtn" data-close aria-label="關閉">✕</button></div>${popupHtml(p)}`;
+}
+function closeDetail() { detailId = null; const d = $('#detail'); if (d) d.hidden = true; }
+$('#detail').addEventListener('click', e => {
+  const f = e.target.closest('[data-fav]'); if (f) return toggleMark(fav, 'favPts', f.dataset.fav);
+  const s = e.target.closest('[data-seen]'); if (s) return toggleMark(seen, 'seenPts', s.dataset.seen);
+  if (e.target.closest('[data-close]')) closeDetail();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+/* ---- drop lookup: which monsters drop an item, and where they are ---- */
+const lc = s => String(s || '').toLowerCase().trim(), mobPts = {};
+for (const p of MD.points) for (const m of p.mons || []) (mobPts[lc(m)] ||= []).push(p.id);
+for (const m of window.MOBS.mobs) for (const p of MD.points) if (!p.mons && (lc(p.nombre) === lc(m.nombre) || (m.zh && p.zh === m.zh))) (mobPts[lc(m.nombre)] ||= []).push(p.id);
+$('#dropSearch').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase(), out = $('#dropResults');
+  if (q.length < 1) return out.innerHTML = '';
+  const hits = [];
+  for (const m of window.MOBS.mobs) for (const b of m.botin) if ([b.zh, b.name].some(n => n && n.toLowerCase().includes(q))) hits.push({ m, b });
+  hits.sort((a, c) => c.b.prob - a.b.prob);
+  out.innerHTML = hits.slice(0, 40).map(({ m, b }) => { const pid = [...(mobPts[lc(m.nombre)] || []), ...(mobPts[lc(MOBZH[m.nombre])] || [])].find(id => ptById[id]); return `<div ${pid ? `data-pid="${esc(pid)}"` : `data-mobid="${esc(m.id)}"`}><b>${esc(b.zh || b.name)}</b> ${b.prob}% <small>← ${esc(m.zh || m.nombre)}${pid ? ' · 📍 ' + esc((mapById[ptById[pid].nivel] || {}).name || '') : ' · 怪物資料'}</small></div>`; }).join('') || '<div><small>沒有怪物掉落這個物品</small></div>';
+});
+$('#dropResults').addEventListener('click', e => {
+  const d = e.target.closest('[data-pid],[data-mobid]'); if (!d) return; $('#dropResults').innerHTML = '';
+  d.dataset.pid ? (focusPoint(d.dataset.pid), closeSideMobile()) : mobModal(d.dataset.mobid);
+});
+
+/* ---- floor picker: 1–100 grid like the in-game floor list ---- */
+$('#btnFloors').onclick = () => {
+  const open = new Set(floorMaps.map(f => String(f.id)));
+  modal(`<h2>🏯 選擇樓層</h2><p class="hint">目前開放第 ${[...open].join('、')} 層。</p>
+  <div class="floorgrid">${Array.from({ length: 100 }, (_, i) => String(i + 1)).map(n => `<button class="fl${open.has(n) ? ' open' : ''}${cur && String(cur.id) === n ? ' cur' : ''}" ${open.has(n) ? `data-floor="${n}"` : 'disabled'}>${n}${open.has(n) ? '' : '<i>🔒</i>'}</button>`).join('')}</div>
+  <div class="legend"><span><i class="open"></i>可進入</span><span><i></i>未開放</span></div>
+  ${floorMaps.map(f => { const subs = MD.maps.filter(m => m.parent === f.id); return subs.length ? `<h3>${esc(f.name)}・地下城與任務地圖</h3><div class="chips">${subs.map(m => `<a href="#" data-floor="${m.id}">${m.quest ? '📜' : '🏰'} ${esc(m.name)}${m.title ? '・' + esc(m.title) : ''}</a>`).join('')}</div>` : ''; }).join('')}`);
+};
+$('#modalBody').addEventListener('click', e => { const b = e.target.closest('[data-floor]'); if (!b) return; e.preventDefault(); $('#modal').hidden = true; switchTab('map'); showMap(b.dataset.floor); });
+
 function showMap(id, keepView) {
   const m = mapById[id]; if (!m) return;
   cur = m; sel.value = id;
@@ -106,14 +168,15 @@ function showMap(id, keepView) {
   for (const p of ptsByMap[id] || []) {
     const g = groups[p.capa] ||= L.layerGroup();
     let mk;
-    if (p.area) L.polygon(p.area.map(a => ll(a[0], a[1])), { color: LAYER.zonas[1], weight: 1.5, fillOpacity: .12 }).bindPopup(() => popupHtml(p)).addTo(g);
-    mk = L.marker(ll(p.wx, p.wz), { icon: icon(p), title: pName(p), riseOnHover: true }).bindPopup(() => popupHtml(p), { maxWidth: 360 });
+    if (!ptFilter(p)) continue;
+    if (p.area) L.polygon(p.area.map(a => ll(a[0], a[1])), { color: LAYER.zonas[1], weight: 1.5, fillOpacity: .12 }).on('click', () => openDetail(p)).addTo(g);
+    mk = L.marker(ll(p.wx, p.wz), { icon: icon(p), title: pName(p), riseOnHover: true }).on('click', () => openDetail(p));
     if (p.capa === 'regiones') mk.bindTooltip(esc(pName(p)), { permanent: true, direction: 'bottom', offset: [0, 10], className: 'lbl' });
     mk.addTo(g); markers[p.id] = mk;
   }
   for (const r of m.routes || []) L.polyline(r.pts.map(q => ll(q[0], q[2])), { color: r.color || '#ffd23f', weight: 3, dashArray: '6 6' }).bindTooltip(esc(r.name || '路線')).addTo(routeLayer);
   for (const [k, g] of Object.entries(groups)) if (!hidden.has(k)) g.addTo(map);
-  renderLayers(); renderGuide(); renderMine(); renderJM();
+  renderLayers(); renderGuide(); renderMine(); renderJM(); renderPtView(); closeDetail();
   if (!keepView) {
     if (b) map.fitBounds([ll(b[0], b[1]), ll(b[2], b[3])]);
     else { const ps = ptsByMap[id] || []; if (ps.length) map.fitBounds(ps.map(p => ll(p.wx, p.wz)), { padding: [40, 40] }); }
@@ -148,7 +211,7 @@ $('#guidePanel').addEventListener('click', e => {
   const ids = cur.guide[+li.dataset.step].pts.filter(id => markers[id]);
   if (!ids.length) return;
   ids.forEach(id => { const p = ptById[id]; hidden.delete(p.capa); groups[p.capa]?.addTo(map); });
-  map.once('moveend', () => { ids.forEach(id => markers[id].getElement()?.firstChild?.classList.add('hl')); markers[ids[0]].openPopup(); setTimeout(() => ids.forEach(id => markers[id].getElement()?.firstChild?.classList.remove('hl')), 3200); });
+  map.once('moveend', () => { ids.forEach(id => markers[id].getElement()?.firstChild?.classList.add('hl')); openDetail(ptById[ids[0]]); setTimeout(() => ids.forEach(id => markers[id].getElement()?.firstChild?.classList.remove('hl')), 3200); });
   map.flyToBounds(ids.map(id => markers[id].getLatLng()), { padding: [80, 80], maxZoom: 1.5, duration: .6 });
 });
 
@@ -157,7 +220,8 @@ function focusPoint(id) {
   switchTab('map');
   if (!cur || cur.id !== String(p.nivel)) showMap(String(p.nivel));
   if (hidden.has(p.capa)) { hidden.delete(p.capa); groups[p.capa]?.addTo(map); renderLayers(); }
-  map.once('moveend', () => { const mk = markers[id]; if (mk) { mk.openPopup(); mk.getElement()?.firstChild?.classList.add('hl'); } });
+  if (!ptFilter(p)) { ptView = 'all'; renderPtView(); showMap(cur.id, true); }
+  map.once('moveend', () => { const mk = markers[id]; openDetail(p); mk?.getElement()?.firstChild?.classList.add('hl'); });
   map.flyTo(ll(p.wx, p.wz), Math.max(map.getZoom(), 1), { duration: .6 });
 }
 

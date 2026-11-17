@@ -34,11 +34,15 @@
   <section id="tab-map" class="tab on">
     <aside class="side" id="mapSide">
       <div class="row">
-        <select id="mapSel" aria-label="選擇地圖"></select>
+        <select id="mapSel" aria-label="選擇地圖" style="flex:1"></select><button id="btnFloors" class="mini" title="1–100 層樓層表">🏯 樓層</button>
       </div>
       <div class="search">
         <input id="mapSearch" type="search" placeholder="搜尋地點、NPC、怪物、物品…（全樓層）" autocomplete="off">
         <div id="mapResults" class="results"></div>
+      </div>
+      <div class="search">
+        <input id="dropSearch" type="search" placeholder="搜尋掉落物：輸入物品名，看哪隻怪會掉" autocomplete="off">
+        <div id="dropResults" class="results"></div>
       </div>
       <div class="row tools">
         <button id="btnGoto" title="輸入座標跳過去">📍 座標</button>
@@ -68,12 +72,14 @@
         <button class="mini">前往</button>
       </form>
       <div id="guidePanel" class="guide" hidden></div>
+      <div class="row ptview"><div id="ptView" class="seg"><button data-v="all">全部</button><button data-v="todo">待辦</button><button data-v="fav">最愛</button></div><span id="ptCount" class="count"></span></div>
       <h4>圖層 <button id="layAll" class="mini">全開</button><button id="layNone" class="mini">全關</button></h4>
       <div id="layerList" class="layers"></div>
-      <p class="hint">提示：右鍵（手機長按）地圖可加入自己的標記；滑鼠位置會顯示遊戲座標 X / Z。</p>
+      <p class="hint">提示：點標記會在右邊顯示詳情，可加入最愛或標記為已看過；「待辦」只顯示還沒看過的標記。右鍵（手機長按）地圖可加入自己的標記。</p>
     </aside>
     <div class="mapwrap">
       <div id="map"></div>
+      <aside id="detail" class="detail" hidden aria-label="地點詳情"></aside>
       <div id="coord" class="coord">X — · Z —</div>
       <button id="sideToggle" class="sidetoggle" aria-label="顯示/隱藏側欄">☰</button>
     </div>
