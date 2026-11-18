@@ -7,8 +7,9 @@
 <header class="top">
   <div class="brand"><b><span class="logo">◆</span>艾恩葛朗特攻略本</b><span class="hp">SAO MC <span class="bar"><i></i></span> F1–F3</span></div>
   <nav id="tabs">
-    <button data-tab="map" class="on"><span class="ic">🗺️</span>互動地圖</button>
-    <button data-tab="items"><span class="ic">🎒</span>物品</button>
+    <button data-tab="home"><span class="ic">🏠</span>主頁</button>
+    <button data-tab="map"><span class="ic">🗺️</span>互動地圖</button>
+    <button data-tab="items"><span class="ic">🎒</span>物品欄</button>
     <button data-tab="mobs"><span class="ic">🐺</span>怪物</button>
     <button data-tab="quests"><span class="ic">📜</span>任務</button>
     <button data-tab="recipes"><span class="ic">⚒️</span>配方</button>
@@ -23,8 +24,10 @@
 </header>
 
 <main>
+  <section id="tab-home" class="tab"><div id="homeBox" class="home"></div></section>
+
   <!-- MAP -->
-  <section id="tab-map" class="tab on">
+  <section id="tab-map" class="tab">
     <aside class="side" id="mapSide">
       <div class="row">
         <select id="mapSel" aria-label="選擇地圖" style="flex:1"></select><button id="btnFloors" class="mini" title="1–100 層樓層表">🏯 樓層</button>
@@ -79,7 +82,10 @@
   </section>
 
   <section id="tab-items" class="tab">
+    <div id="itemHome" class="ihome"></div>
+    <div id="itemList" hidden>
     <div class="filters">
+      <button id="itemBack" class="mini">← 物品欄</button><b id="itemTitle" class="ititle"></b>
       <input id="itemQ" type="search" placeholder="搜尋物品（中文 / English / Français）">
       <select id="itemCat"></select>
       <select id="itemRar"></select>
@@ -89,6 +95,7 @@
     </div>
     <div id="itemGrid" class="grid"></div>
     <button id="itemMore" class="more" hidden>顯示更多</button>
+    </div>
   </section>
 
   <section id="tab-mobs" class="tab">

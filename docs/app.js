@@ -405,7 +405,8 @@ let itemLimit = 120;
 function renderItems() {
   const q = $('#itemQ').value.trim().toLowerCase(), c = $('#itemCat').value, r = $('#itemRar').value, s = $('#itemSort').value;
   const own = $('#itemOwn').checked;
-  let list = ITEMS.filter((i, k) => (!q || itemText[k].includes(q)) && (!c || i.c === c) && (!r || i.r === r) && (!own || OWNED.has(i.id)));
+  const gc = itemGroup && itemGroup.cats;
+  let list = ITEMS.filter((i, k) => (!q || itemText[k].includes(q)) && (!gc || gc.includes(i.c)) && (!c || i.c === c) && (!r || i.r === r) && (!own || OWNED.has(i.id)));
   list.sort(s === 'lv' ? (a, b) => (b.l || 0) - (a.l || 0) : s === 'rar' ? (a, b) => (RAR[b.r]?.[1] || 0) - (RAR[a.r]?.[1] || 0) : (a, b) => itemName(a).localeCompare(itemName(b), 'zh-Hant'));
   $('#itemCount').textContent = `${list.length} 件`;
   $('#itemGrid').innerHTML = list.slice(0, itemLimit).map(i => `<div class="card" style="${rarCss(i.r)}" data-item="${i.id}">${itemImg(i) ? `<img loading="lazy" src="${itemImg(i)}" alt="">` : ''}<div class="body"><div class="t">${esc(itemName(i))}${ownTag(i)}</div><div class="s">${i.zh ? esc(i.en) + '<br>' : ''}<span class="rar">${RAR[i.r]?.[0] || ''}</span> · ${esc(CAT[i.c] || i.c)}${i.l ? ' · 等級 ' + i.l : ''}${i.game ? ' <span class="tag">遊戲內</span>' : ''}</div></div></div>`).join('');
@@ -440,16 +441,61 @@ function itemModal(id) {
   ${uses.length ? `<h3>用來製作</h3><p>${[...new Set(uses)].map(u => esc(GUIDE.zhItems[u] || u)).join('、')}</p>` : ''}
   ${where.length ? `<h3>地圖上的位置</h3><p>${where.map(p => `<button class="maplink" data-focus="${esc(p.id)}">📍 ${esc(pName(p))}（${esc(mapById[p.nivel]?.name || p.nivel)}）</button>`).join(' ')}</p>` : ''}`);
 }
+/* item catalogue: grouped category cards first, then the filtered list */
+const IGROUPS = [
+  { h: '⚔️ 裝備', items: [
+    { k: 'weapon', n: '武器', ic: '🗡️', cats: ['sword', 'dagger', 'bow', 'crossbow', 'staff_mage', 'staff_shaman', 'catalyst', 'shield', 'offhand_dagger', 'quiver'] },
+    { k: 'armor', n: '防具', ic: '🛡️', cats: ['armor'] },
+    { k: 'acc', n: '飾品', ic: '💍', cats: ['ring', 'amulet', 'bracelet', 'gloves', 'artifact'] }] },
+  { h: '🧪 消耗品', items: [
+    { k: 'potion', n: '藥水與水晶', ic: '⚗️', cats: ['potion_heal', 'potion_mana', 'potion_stamina', 'crystal', 'fortifier'] },
+    { k: 'food', n: '食物', ic: '🍖', cats: ['food'] },
+    { k: 'key', n: '卷軸與鑰匙', ic: '🗝️', cats: ['scroll', 'dungeon_key', 'key_crate'] },
+    { k: 'misc', n: '其他消耗品', ic: '🎒', cats: ['consumable', 'consumable_item'] }] },
+  { h: '🪨 材料', items: [
+    { k: 'mat', n: '怪物素材', ic: '🦴', cats: ['material'] },
+    { k: 'gem', n: '符文與寶石', ic: '💠', cats: ['gem_stone'] },
+    { k: 'mine', n: '礦石', ic: '⛏️', cats: ['miner_job'] },
+    { k: 'wood', n: '木材', ic: '🪓', cats: ['lumberjack_job'] },
+    { k: 'farm', n: '農作物', ic: '🌾', cats: ['farmer_job'] },
+    { k: 'fish', n: '魚類', ic: '🎣', cats: ['fishing_job'] },
+    { k: 'tool', n: '工具', ic: '🔨', cats: ['tool'] }] },
+  { h: '🎉 活動限定', items: [
+    { k: 'hw', n: '萬聖節', ic: '🎃', cats: ['halloween'] },
+    { k: 'xmas', n: '聖誕節', ic: '🎄', cats: ['noel2025'] },
+    { k: 'val', n: '情人節', ic: '💝', cats: ['saint_valentin'] },
+    { k: 'lunar', n: '農曆新年', ic: '🧧', cats: ['lunar'] }] },
+];
+const IG_ALL = { k: 'all', n: '全部物品', cats: null };
+let itemGroup = null;
+function renderItemHome() {
+  const cnt = cats => ITEMS.filter(i => cats.includes(i.c)).length;
+  const peek = cats => ITEMS.filter(i => cats.includes(i.c) && itemImg(i)).sort((a, b) => (RAR[b.r]?.[1] || 0) - (RAR[a.r]?.[1] || 0)).slice(0, 4);
+  $('#itemHome').innerHTML = `<div class="ihead"><div><h1>🎒 物品欄</h1><p class="hint">艾恩葛朗特全部 ${ITEMS.length} 件裝備與物品，按類別瀏覽或直接搜尋。</p></div>
+    <input id="itemHomeQ" type="search" placeholder="搜尋全部物品（中文 / English / Français）"></div>` +
+    IGROUPS.map(g => { const n = g.items.reduce((a, x) => a + cnt(x.cats), 0); return `<h2 class="ig-h">${g.h} <small class="count">${n}</small></h2><div class="igrid">${g.items.filter(x => cnt(x.cats)).map(x => {
+      const pk = peek(x.cats); return `<button class="icat" data-group="${x.k}"><span class="peek">${pk.length ? pk.map(i => `<img src="${itemImg(i)}" alt="" loading="lazy">`).join('') : `<span class="big">${x.ic}</span>`}</span><span class="lab">${x.ic} ${x.n}<b>${cnt(x.cats)}</b></span></button>`; }).join('')}</div>`; }).join('');
+}
+function openItemGroup(k, q) {
+  itemGroup = k === 'all' ? IG_ALL : IGROUPS.flatMap(g => g.items).find(x => x.k === k) || IG_ALL;
+  const cats = itemGroup.cats || [...new Set(ITEMS.map(i => i.c))].sort((a, b) => (CAT[a] || a).localeCompare(CAT[b] || b, 'zh-Hant'));
+  $('#itemCat').innerHTML = `<option value="">${itemGroup.cats ? '全部' + esc(itemGroup.n) : '全部分類'}</option>` + cats.map(c => `<option value="${c}">${esc(CAT[c] || c)}</option>`).join('');
+  $('#itemCat').hidden = cats.length < 2;
+  $('#itemTitle').textContent = itemGroup.n; $('#itemQ').value = q || ''; itemLimit = 120;
+  $('#itemHome').hidden = true; $('#itemList').hidden = false; renderItems(); $('#tab-items').scrollTop = 0;
+}
 Object.assign(RENDER, {
   items() {
-    const cats = [...new Set(ITEMS.map(i => i.c))].sort((a, b) => (CAT[a] || a).localeCompare(CAT[b] || b, 'zh-Hant'));
-    $('#itemCat').innerHTML = '<option value="">全部分類</option>' + cats.map(c => `<option value="${c}">${esc(CAT[c] || c)}</option>`).join('');
     $('#itemRar').innerHTML = '<option value="">全部稀有度</option>' + Object.entries(RAR).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('');
     ['#itemQ', '#itemCat', '#itemRar', '#itemSort', '#itemOwn'].forEach(s => $(s).addEventListener('input', () => { itemLimit = 120; renderItems(); }));
     $('#itemMore').onclick = () => { itemLimit += 240; renderItems(); };
     $('#itemGrid').onclick = e => { const c = e.target.closest('[data-item]'); if (c) itemModal(c.dataset.item); };
-    $('#itemCount').textContent = '載入圖示中…';
-    loadJs('data/img-items.js').then(renderItems);
+    $('#itemHome').innerHTML = '<p class="hint" style="padding:16px">載入圖示中…</p>';
+    $('#itemHome').addEventListener('click', e => { const b = e.target.closest('[data-group]'); if (b) openItemGroup(b.dataset.group); });
+    $('#itemHome').addEventListener('keydown', e => { if (e.target.id === 'itemHomeQ' && e.key === 'Enter') openItemGroup('all', e.target.value.trim()); });
+    $('#itemHome').addEventListener('input', e => { if (e.target.id === 'itemHomeQ' && e.target.value.trim().length >= 2) { const v = e.target.value; openItemGroup('all', v); $('#itemQ').focus(); } });
+    $('#itemBack').onclick = () => { $('#itemList').hidden = true; $('#itemHome').hidden = false; itemGroup = null; };
+    loadJs('data/img-items.js').then(renderItemHome);
   },
 });
 
@@ -622,6 +668,30 @@ RENDER.systems = () => {
   $('#runeTable').innerHTML = `<div class="tw"><table><tr><th>符文</th><th>稀有度</th><th>效果</th></tr>${R.map(r => `<tr><td>${byId.has(r.id) ? `<a href="#" data-item="${r.id}">${esc(r.zh)}</a>` : esc(r.zh)}</td><td>${esc(r.r)}</td><td>${esc(r.b).replace(/(^|、)(-[^、]+)/g, '$1<span style="color:var(--bad)">$2</span>')}</td></tr>`).join('')}</table></div>`;
 };
 
+/* ================= HOME ================= */
+RENDER.home = () => {
+  const open = floorMaps.map(f => f.id).join('、'), qn = Object.values(GUIDE.mainq).reduce((a, q) => a + q.length, 0) + Object.values(GUIDE.chain || {}).reduce((a, q) => a + q.length, 0);
+  const go = [
+    ['map', '🗺️', '互動地圖', `第 ${open} 層＋地下城，${MD.points.length} 個標記`],
+    ['floors', '🏯', '樓層表', '1–100 層，揀樓層直接跳去地圖'],
+    ['items', '🎒', '物品欄', `${ITEMS.length} 件裝備與物品，分類瀏覽`],
+    ['mobs', '🐺', '怪物圖鑑', `${MOBS.mobs.length} 隻怪物，掉落物與出沒地點`],
+    ['quests', '📜', '任務', `主線與支線，可以勾選完成`],
+    ['dungeons', '🏰', '地下城', '逐步攻略與路線'],
+    ['bosses', '👑', '世界王', '開放時間自動換算成你的時區'],
+    ['systems', '📖', '遊戲系統', '屬性、生活職業、商人時間…'],
+    ['me', '👤', '我的進度', '用官方 API key 查看自己的進度'],
+  ];
+  $('#homeBox').innerHTML = `<div class="hero"><div class="orb" style="background-image:url(maps/aincrad-1.webp)"></div>
+    <div class="hero-t"><p class="kicker">SWORD ART ONLINE · MINECRAFT</p><h1>艾恩葛朗特攻略本</h1>
+    <p class="lead">互動地圖、物品、怪物、任務、地下城一站看完。中文整理，手機也能用。</p>
+    <div class="row"><button class="cta" data-go="map">進入地圖 →</button><button class="cta ghost" data-go="floors">🏯 選擇樓層</button></div></div></div>
+    <div class="hstats">${[[MD.points.length, '地圖標記'], [ITEMS.length, '物品'], [MOBS.mobs.length, '怪物'], [qn, '任務'], [floorMaps.length, '已開放樓層']].map(([n, t]) => `<div><b>${n.toLocaleString()}</b><span>${t}</span></div>`).join('')}</div>
+    <div class="hgo">${go.map(([k, ic, t, d]) => `<button class="hcard" data-go="${k}"><span class="hic">${ic}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('')}</div>
+    <p class="hint hfoot">非官方玩家攻略，遊戲資料以遊戲內為準。</p>`;
+  $('#homeBox').onclick = e => { const b = e.target.closest('[data-go]'); if (!b) return; const k = b.dataset.go; if (k === 'floors') { switchTab('map'); $('#btnFloors').click(); } else switchTab(k); };
+};
+
 /* ================= MY PROGRESS (official API via the user's own Cloudflare Worker) ================= */
 // The official API only allows its own website in browsers, so requests go through a Worker the user deploys
 // (tools/cloudflare-worker.mjs). The key stays in this browser and is sent only to that Worker.
@@ -730,7 +800,7 @@ function route() {
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.startsWith('p-')) { switchTab('map'); return focusPoint(ptBySafe[h.slice(2)]); }
   if (h.startsWith('v-')) { const [, i, x, z, zm] = h.split('-'); const m = MD.maps[+i]; if (m) { switchTab('map'); showMap(m.id, true); return map.setView(ll(unnum(x), unnum(z)), unnum(zm) / 100); } }
-  switchTab(RENDER[h] || h === 'map' ? h : 'map');
+  switchTab(RENDER[h] || h === 'map' ? h : h ? 'map' : 'home');
 }
 showMap('1');
 route();
