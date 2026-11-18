@@ -217,7 +217,7 @@ $('#guidePanel').addEventListener('click', e => {
 
 function focusPoint(id) {
   const p = ptById[id]; if (!p) return;
-  switchTab('map');
+  switchTab('map'); map.invalidateSize(); // the map may have been hidden (size 0) until now
   if (!cur || cur.id !== String(p.nivel)) showMap(String(p.nivel));
   if (hidden.has(p.capa)) { hidden.delete(p.capa); groups[p.capa]?.addTo(map); renderLayers(); }
   if (!ptFilter(p)) { ptView = 'all'; renderPtView(); showMap(cur.id, true); }
@@ -389,13 +389,17 @@ $('#sideToggle').onclick = () => $('#mapSide').classList.toggle('open');
 /* ================= TABS ================= */
 const rendered = {};
 function switchTab(t) {
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('#tabs button, #bnav [data-tab], #moreSheet [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('#bmore').classList.toggle('on', !!$(`#moreSheet [data-tab="${t}"]`)); $('#moreSheet').hidden = true;
   document.querySelectorAll('.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + t));
   if (!rendered[t]) { rendered[t] = 1; RENDER[t]?.(); }
   if (t === 'map') setTimeout(() => map.invalidateSize(), 0);
   if (location.hash.slice(1) !== t && !(t === 'map' && /^#(v|p)-/.test(location.hash))) history.replaceState(null, '', '#' + t);
 }
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) switchTab(b.dataset.tab); };
+// phone: bottom bar + "more" sheet
+$('#bnav').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.id === 'bmore') { $('#moreSheet').hidden = !$('#moreSheet').hidden; return; } switchTab(b.dataset.tab); };
+$('#moreSheet').onclick = e => { const b = e.target.closest('button'); if (b?.dataset.tab) return switchTab(b.dataset.tab); if (b?.hasAttribute('data-gs')) { $('#moreSheet').hidden = true; return openGs(); } if (e.target.id === 'moreSheet') $('#moreSheet').hidden = true; };
 
 /* ================= ITEMS ================= */
 const itemName = i => i.zh || i.en;
@@ -405,11 +409,11 @@ let itemLimit = 120;
 function renderItems() {
   const q = $('#itemQ').value.trim().toLowerCase(), c = $('#itemCat').value, r = $('#itemRar').value, s = $('#itemSort').value;
   const own = $('#itemOwn').checked;
-  const gc = itemGroup && itemGroup.cats;
-  let list = ITEMS.filter((i, k) => (!q || itemText[k].includes(q)) && (!gc || gc.includes(i.c)) && (!c || i.c === c) && (!r || i.r === r) && (!own || OWNED.has(i.id)));
+  const gc = itemGroup && itemGroup.cats, aq = $('#itemAcq').value, lmin = +$('#itemLvMin').value || 0, lmax = +$('#itemLvMax').value || 999;
+  let list = ITEMS.filter((i, k) => (!q || itemText[k].includes(q)) && (!gc || gc.includes(i.c)) && (!c || i.c === c) && (!r || i.r === r) && (!own || OWNED.has(i.id)) && (i.l || 0) >= lmin && (i.l || 0) <= lmax && (!aq || itemFlags(i)[aq]));
   list.sort(s === 'lv' ? (a, b) => (b.l || 0) - (a.l || 0) : s === 'rar' ? (a, b) => (RAR[b.r]?.[1] || 0) - (RAR[a.r]?.[1] || 0) : (a, b) => itemName(a).localeCompare(itemName(b), 'zh-Hant'));
   $('#itemCount').textContent = `${list.length} 件`;
-  $('#itemGrid').innerHTML = list.slice(0, itemLimit).map(i => `<div class="card" style="${rarCss(i.r)}" data-item="${i.id}">${itemImg(i) ? `<img loading="lazy" src="${itemImg(i)}" alt="">` : ''}<div class="body"><div class="t">${esc(itemName(i))}${ownTag(i)}</div><div class="s">${i.zh ? esc(i.en) + '<br>' : ''}<span class="rar">${RAR[i.r]?.[0] || ''}</span> · ${esc(CAT[i.c] || i.c)}${i.l ? ' · 等級 ' + i.l : ''}${i.game ? ' <span class="tag">遊戲內</span>' : ''}</div></div></div>`).join('');
+  $('#itemGrid').innerHTML = list.slice(0, itemLimit).map(i => `<div class="card" style="${rarCss(i.r)}" data-item="${i.id}">${itemImg(i) ? `<img loading="lazy" src="${itemImg(i)}" alt="">` : ''}<div class="body"><div class="t">${esc(itemName(i))}${ownTag(i)}</div>${badges(i)}<div class="s">${i.zh ? esc(i.en) + '<br>' : ''}<span class="rar">${RAR[i.r]?.[0] || ''}</span> · ${esc(CAT[i.c] || i.c)}${i.l ? ' · 等級 ' + i.l : ''}${i.game ? ' <span class="tag">遊戲內</span>' : ''}</div></div></div>`).join('');
   $('#itemMore').hidden = list.length <= itemLimit;
 }
 const SRC = { build: '官方百科有收錄', tienda: '商店出售', receta: '可以製作', visto: '遊戲內見過', compra: '可以收購' };
@@ -499,7 +503,7 @@ function openItemGroup(k, q) {
 Object.assign(RENDER, {
   items() {
     $('#itemRar').innerHTML = '<option value="">全部稀有度</option>' + Object.entries(RAR).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('');
-    ['#itemQ', '#itemCat', '#itemRar', '#itemSort', '#itemOwn'].forEach(s => $(s).addEventListener('input', () => { itemLimit = 120; renderItems(); }));
+    ['#itemQ', '#itemCat', '#itemRar', '#itemSort', '#itemOwn', '#itemAcq', '#itemLvMin', '#itemLvMax'].forEach(s => $(s).addEventListener('input', () => { itemLimit = 120; renderItems(); }));
     $('#itemMore').onclick = () => { itemLimit += 240; renderItems(); };
     $('#itemGrid').onclick = e => { const c = e.target.closest('[data-item]'); if (c) itemModal(c.dataset.item); };
     $('#itemHome').innerHTML = '<p class="hint" style="padding:16px">載入圖示中…</p>';
@@ -679,6 +683,73 @@ RENDER.systems = () => {
   const R = GUIDE.runes || [], byId = new Map(ITEMS.map(i => [i.id, i]));
   $('#runeTable').innerHTML = `<div class="tw"><table><tr><th>符文</th><th>稀有度</th><th>效果</th></tr>${R.map(r => `<tr><td>${byId.has(r.id) ? `<a href="#" data-item="${r.id}">${esc(r.zh)}</a>` : esc(r.zh)}</td><td>${esc(r.r)}</td><td>${esc(r.b).replace(/(^|、)(-[^、]+)/g, '$1<span style="color:var(--bad)">$2</span>')}</td></tr>`).join('')}</table></div>`;
 };
+
+/* ================= ITEM FLAGS (how it is obtained, for filters and card icons) ================= */
+const FLAG_SETS = (() => {
+  const sold = new Set(), made = new Set(), placed = new Set(), dropped = new Set(), recipe = new Set(), recipeLoc = new Set();
+  for (const p of MD.points) {
+    for (const o of p.objetos || []) { (o.receta ? made : sold).add(o.nombre); placed.add(o.nombre); }
+    for (const o of p.compraObjetos || []) placed.add(o.nombre);
+    for (const n of p.items || []) placed.add(n);
+  }
+  for (const m of MOBS.mobs) for (const b of m.botin) { dropped.add(lc(b.name)); if (b.zh) dropped.add(b.zh); }
+  for (const [npc, v] of Object.entries(GUIDE.recipes)) for (const r of v.items) { recipe.add(String(r[0])); recipe.add(r[1]); if (npcPt(npc)) { recipeLoc.add(String(r[0])); recipeLoc.add(r[1]); } }
+  return { sold, made, placed, dropped, recipe, recipeLoc };
+})();
+const flagCache = new Map();
+function itemFlags(i) {
+  if (flagCache.has(i.id)) return flagCache.get(i.id);
+  const S = FLAG_SETS, a = i.acq || [], src = i.src || [];
+  const buy = a.some(x => x.t === 'buy') || src.some(s => s.tipo === 'tienda') || S.sold.has(i.en);
+  const craft = a.some(x => x.t === 'craft') || src.some(s => s.tipo === 'receta') || S.made.has(i.en) || S.recipe.has(String(i.id)) || S.recipe.has(i.en);
+  const drop = a.some(x => x.t === 'drop') || S.dropped.has(lc(i.en)) || (i.zh && S.dropped.has(i.zh));
+  const loc = S.placed.has(i.en) || S.recipeLoc.has(String(i.id)) || S.recipeLoc.has(i.en) || a.some(x => x.x != null || (x.mob && MOBS.mobs.some(m => m.id === x.mob && mobPts[lc(m.nombre)])));
+  const f = { buy, craft, drop, loc, none: !(buy || craft || drop || src.length || a.length || CAT_SRC[i.c]) };
+  flagCache.set(i.id, f); return f;
+}
+const badges = i => { const f = itemFlags(i); const b = [['buy', '🛒', '可購買'], ['craft', '⚒️', '可製作'], ['drop', '🐾', '怪物掉落'], ['loc', '📍', '有地圖位置']].filter(([k]) => f[k]); return b.length ? `<div class="badges">${b.map(([, e, t]) => `<span title="${t}">${e}</span>`).join('')}</div>` : ''; };
+
+/* ================= GLOBAL SEARCH (Ctrl+K) ================= */
+let gsIdx = -1, gsHits = [];
+function openGs() { $('#gs').hidden = false; $('#gsIn').value = ''; $('#gsOut').innerHTML = '<p class="hint">輸入名稱，例如「狼牙」、「Kaelor」、「Pumba」。</p>'; setTimeout(() => $('#gsIn').focus(), 0); }
+const closeGs = () => { $('#gs').hidden = true; };
+$('#gsBtn').onclick = openGs;
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#gs').hidden ? openGs() : closeGs(); }
+  else if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) { e.preventDefault(); openGs(); }
+  else if (e.key === 'Escape' && !$('#gs').hidden) closeGs();
+});
+$('#gs').addEventListener('click', e => { if (e.target.id === 'gs') return closeGs(); const d = e.target.closest('[data-gk]'); if (d) gsGo(+d.dataset.gk); });
+const mobText = MOBS.mobs.map(m => [m.zh, m.nombre, m.original].join(' ').toLowerCase());
+const questList = [...Object.entries(GUIDE.mainq).flatMap(([fl, qs]) => qs.map(q => ({ fl, t: (GUIDE.questZh[q.t] || {}).zh || q.t, en: q.t }))), ...Object.entries(GUIDE.chain || {}).flatMap(([fl, qs]) => qs.map(q => ({ fl, t: q.t, en: '' })))];
+$('#gsIn').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase(); gsIdx = -1;
+  if (!q) { gsHits = []; return $('#gsOut').innerHTML = ''; }
+  const rank = (name, t) => { const n = String(name || '').toLowerCase(); return (n.startsWith(q) ? 0 : n.includes(q) ? 1 : 2) + (String(t || '').includes(q) ? 0 : 9); };
+  const pick = (arr, name, text, n) => arr.map((x, k) => [x, rank(name(x), text(x, k))]).filter(([, r]) => r < 9).sort((a, b) => a[1] - b[1]).slice(0, n).map(([x]) => x);
+  const items = pick(ITEMS, i => itemName(i), (i, k) => itemText[k], 8);
+  const mobs = pick(MOBS.mobs, m => m.zh || m.nombre, (m, k) => mobText[k], 6);
+  const pts = pick(searchIndex, s => pName(s.p), s => s.t, 8).map(s => s.p);
+  const qs = pick(questList, x => x.t, x => (x.t + ' ' + x.en).toLowerCase(), 5);
+  gsHits = [...items.map(i => ['item', i]), ...mobs.map(m => ['mob', m]), ...pts.map(p => ['pt', p]), ...qs.map(x => ['quest', x])];
+  const sec = (k, title, f) => { const rows = gsHits.map((h, n) => [h, n]).filter(([h]) => h[0] === k); return rows.length ? `<h4>${title}</h4>` + rows.map(([h, n]) => `<div class="gs-row" data-gk="${n}">${f(h[1])}</div>`).join('') : ''; };
+  $('#gsOut').innerHTML = (sec('item', '🎒 物品', i => `${itemImg(i) ? `<img src="${itemImg(i)}" alt="">` : '<span class="gs-ic">🎒</span>'}<span><b>${esc(itemName(i))}</b><small>${esc(i.en)} · ${esc(CAT[i.c] || i.c)}${i.l ? ' · Lv ' + i.l : ''}</small></span>`) +
+    sec('mob', '🐺 怪物', m => `<span class="gs-ic">${m.jefe ? '👑' : '🐾'}</span><span><b>${esc(m.zh || m.nombre)}</b><small>${esc(zoneName[m.zona] || m.zona || '')}</small></span>`) +
+    sec('pt', '🗺️ 地點', p => `<span class="gs-ic">${CAPA_ICON[p.capa] || ICON[p.tipo] || '📍'}</span><span><b>${esc(pName(p))}</b><small>${esc((mapById[p.nivel] || {}).name || p.nivel)} · ${esc((LAYER[p.capa] || [p.capa])[0])}</small></span>`) +
+    sec('quest', '📜 任務', x => `<span class="gs-ic">📜</span><span><b>${esc(x.t)}</b><small>第 ${x.fl} 層主線</small></span>`)) || '<p class="hint">找不到相關結果</p>';
+});
+$('#gsIn').addEventListener('keydown', e => {
+  const rows = [...document.querySelectorAll('#gsOut .gs-row')]; if (!rows.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); gsIdx = (gsIdx + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length; rows.forEach((r, n) => r.classList.toggle('sel', n === gsIdx)); rows[gsIdx].scrollIntoView({ block: 'nearest' }); }
+  if (e.key === 'Enter') { e.preventDefault(); gsGo(+(rows[Math.max(gsIdx, 0)].dataset.gk)); }
+});
+function gsGo(n) {
+  const h = gsHits[n]; if (!h) return; closeGs();
+  if (h[0] === 'item') { if (!window.IMG_I) loadJs('data/img-items.js'); itemModal(h[1].id); }
+  else if (h[0] === 'mob') mobModal(h[1].id);
+  else if (h[0] === 'pt') { focusPoint(h[1].id); closeSideMobile(); }
+  else { switchTab('quests'); }
+}
 
 /* ================= HOME ================= */
 RENDER.home = () => {

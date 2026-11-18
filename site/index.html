@@ -20,8 +20,14 @@
     <button data-tab="me"><span class="ic">👤</span>我的進度</button>
     <button data-tab="about"><span class="ic">ℹ️</span>關於</button>
   </nav>
+  <button id="gsBtn" class="theme gsbtn" aria-label="搜尋全站（Ctrl+K）" title="搜尋全站（Ctrl+K）">🔍<span>搜尋</span><kbd>Ctrl K</kbd></button>
   <button id="themeBtn" class="theme" aria-label="切換深色／淺色">◐</button>
 </header>
+<div id="gs" class="gs" hidden><div class="gs-card" role="dialog" aria-label="搜尋全站">
+  <input id="gsIn" type="search" placeholder="搜尋物品、怪物、地點、任務…" autocomplete="off">
+  <div id="gsOut" class="gs-out"></div>
+  <p class="hint gs-hint">↑↓ 選擇 · Enter 打開 · Esc 關閉</p>
+</div></div>
 
 <main>
   <section id="tab-home" class="tab"><div id="homeBox" class="home"></div></section>
@@ -90,6 +96,8 @@
       <select id="itemCat"></select>
       <select id="itemRar"></select>
       <label id="itemOwnWrap" hidden><input type="checkbox" id="itemOwn"> 只看我有的</label>
+      <select id="itemAcq" aria-label="取得方式"><option value="">全部取得方式</option><option value="buy">🛒 可購買</option><option value="craft">⚒️ 可製作</option><option value="drop">🐾 怪物掉落</option><option value="loc">📍 有地圖位置</option><option value="none">❔ 未有資料</option></select>
+      <span class="lvr">等級 <input id="itemLvMin" type="number" min="0" max="99" placeholder="最低" aria-label="最低等級"> – <input id="itemLvMax" type="number" min="0" max="99" placeholder="最高" aria-label="最高等級"></span>
       <select id="itemSort"><option value="name">名稱</option><option value="lv">等級高→低</option><option value="rar">稀有度高→低</option></select>
       <span id="itemCount" class="count"></span>
     </div>
@@ -125,6 +133,12 @@
   <section id="tab-about" class="tab"><div id="aboutBox" class="doc"></div></section>
 </main>
 
+<nav id="bnav" class="bnav" aria-label="主要分頁">
+  <button data-tab="home"><span>🏠</span>主頁</button><button data-tab="map"><span>🗺️</span>地圖</button><button data-tab="items"><span>🎒</span>物品</button><button data-tab="mobs"><span>🐺</span>怪物</button><button data-tab="quests"><span>📜</span>任務</button><button id="bmore"><span>⋯</span>更多</button>
+</nav>
+<div id="moreSheet" class="sheet" hidden><div class="sheet-card">
+  <button data-tab="recipes"><span>⚒️</span>配方</button><button data-tab="dungeons"><span>🏰</span>地下城</button><button data-tab="classes"><span>⚔️</span>職業</button><button data-tab="bosses"><span>👑</span>世界王</button><button data-tab="systems"><span>📖</span>系統</button><button data-tab="me"><span>👤</span>我的進度</button><button data-tab="about"><span>ℹ️</span>關於</button><button data-gs><span>🔍</span>搜尋</button>
+</div></div>
 <div id="modal" class="modal" hidden><div class="modal-card"><button class="x" aria-label="關閉">✕</button><div id="modalBody"></div></div></div>
 <div id="toast" class="toast" hidden></div>
 
