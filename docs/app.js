@@ -420,6 +420,17 @@ const npcPt = n => (ptByName[nk(n)] || ptByName[nk(GUIDE.zhNpcs[String(n).replac
 const pin = p => p ? ` <button class="maplink" data-focus="${esc(p.id)}">📍 ${esc(mapById[p.nivel]?.name || p.nivel)}</button>` : '';
 // items whose category says how they are obtained (shown when nothing more specific is known)
 const CAT_SRC = { fishing_job: '🎣 釣魚取得（生活職業：釣魚）', miner_job: '⛏️ 挖礦取得（生活職業：礦工）', lumberjack_job: '🪓 伐木取得（生活職業：伐木工）', farmer_job: '🌾 種植或採集取得（農夫、草藥師）', halloween: '🎃 萬聖節活動限定（活動地下城、萬聖節卡池）', noel2025: '🎄 聖誕節活動限定', saint_valentin: '💝 情人節活動限定', lunar: '🧧 農曆新年活動限定', key_crate: '🗝️ 寶箱鑰匙（活動或商店）' };
+// nearest map marker to a coordinate (for sources that only give X / Z)
+const nearPt = (x, z) => { let b = null, bd = 30; for (const p of MD.points) { const d = Math.hypot(p.wx - x, p.wz - z); if (d < bd) { bd = d; b = p; } } return b; };
+const acqLine = (a, i) => {
+  const near = a.x != null ? nearPt(a.x, a.z) : null;
+  const xz = a.x != null ? ` <small class="count">X ${a.x} Z ${a.z}</small>${near ? pin(near) : ` <button class="maplink" data-copy="${a.x} ${a.z}">複製座標</button>`}` : '';
+  const mob = a.mob && MOBS.mobs.find(m => m.id === a.mob);
+  if (a.t === 'buy') return `🛒 購買：${esc(a.w)}${a.p ? '，' + esc(a.p) : ''}${xz}`;
+  if (a.t === 'craft') return `⚒️ 製作：${esc(a.w)}${i.acqIng ? `<br><small>材料：${esc(i.acqIng)}</small>` : ''}${xz}`;
+  if (a.t === 'drop') return `🐾 打倒 ${esc(a.w)} 掉落${mob ? pin([...(mobPts[lc(mob.nombre)] || []), ...(mobPts[lc(mob.zh)] || [])].map(x => ptById[x]).find(Boolean)) : ''}`;
+  return `✨ ${esc(a.w)}${xz}`;
+};
 function itemModal(id) {
   const i = ITEMS.find(x => x.id == id); if (!i) return;
   const where = MD.points.filter(p => (p.objetos || []).some(o => o.nombre === i.en) || (p.compraObjetos || []).some(o => o.nombre === i.en) || (p.items || []).includes(i.en));
@@ -433,11 +444,11 @@ function itemModal(id) {
   ${set ? `<h3>套裝：${esc(set.name)}</h3><ul>${set.tiers.map(t => `<li>${t[0]} 件：${esc(t[1])}</li>`).join('')}</ul>` : ''}
   ${pot ? `<h3>效果</h3><ul>${pot.effects.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
   ${i.lore ? `<p><i>${esc(i.lore)}</i></p>` : ''}
-  <h3>取得方式</h3><ul>${(i.src || []).map(s => `<li>${SRC[s.tipo] || s.tipo}${s.piso ? `（第 ${s.piso} 層` + (s.pnj ? `・${esc(s.pnj)}` : '') + '）' : ''}${s.pnj ? pin(npcPt(s.pnj)) : ''}</li>`).join('')}
+  <h3>取得方式</h3><ul>${(i.acq || []).filter(a => a.t !== 'drop' || !(a.mob ? drops.some(m => m.id === a.mob) : drops.length)).map(a => `<li>${acqLine(a, i)}${i.acqTest ? ' <small class="count">（資料可能不準）</small>' : ''}</li>`).join('')}${(i.src || []).map(s => `<li>${SRC[s.tipo] || s.tipo}${s.piso ? `（第 ${s.piso} 層` + (s.pnj ? `・${esc(s.pnj)}` : '') + '）' : ''}${s.pnj ? pin(npcPt(s.pnj)) : ''}</li>`).join('')}
   ${recipes.map(([npc, fl, r]) => `<li>⚒️ ${esc(GUIDE.zhNpcs[npc.replace(/^\d\|/, '')] || npc.replace(/^\d\|/, ''))}（第 ${fl} 層）：${(r[3] || []).map(m => esc(GUIDE.zhItems[m[0]] || m[0]) + '×' + m[1]).join(' + ')}${r[4] ? ' · ' + esc(r[4]) + ' 珂爾' : ''}${pin(npcPt(npc))}</li>`).join('')}
   ${drops.map(m => `<li>🐾 ${esc(m.zh || m.nombre)} 掉落 ${m.botin.find(b => (b.name || '').toLowerCase() === i.en.toLowerCase() || b.name === i.zh).prob}%${pin([...(mobPts[lc(m.nombre)] || []), ...(mobPts[lc(m.zh)] || [])].map(x => ptById[x]).find(Boolean))}</li>`).join('')}
   ${CAT_SRC[i.c] && !recipes.length && !drops.length ? `<li>${CAT_SRC[i.c]} <small class="count">按物品分類推斷</small></li>` : ''}
-  ${!(i.src || []).length && !recipes.length && !drops.length && !CAT_SRC[i.c] && !where.length ? '<li class="hint">暫時未有取得方式的資料</li>' : ''}</ul>
+  ${!(i.acq || []).length && !(i.src || []).length && !recipes.length && !drops.length && !CAT_SRC[i.c] && !where.length ? '<li class="hint">暫時未有取得方式的資料</li>' : ''}</ul>
   ${uses.length ? `<h3>用來製作</h3><p>${[...new Set(uses)].map(u => esc(GUIDE.zhItems[u] || u)).join('、')}</p>` : ''}
   ${where.length ? `<h3>地圖上的位置</h3><p>${where.map(p => `<button class="maplink" data-focus="${esc(p.id)}">📍 ${esc(pName(p))}（${esc(mapById[p.nivel]?.name || p.nivel)}）</button>`).join(' ')}</p>` : ''}`);
 }

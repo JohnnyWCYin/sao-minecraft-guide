@@ -166,7 +166,6 @@ const items = [...(WT.get('r') || []), ...(WT.get('n') || [])].map(it => {
   return { id: it.id, zh: off || WK.items[it.id] || zhExtra[enName] || null, ...(off ? {} : WK.items[it.id] ? { zhW: 1 } : zhExtra[enName] ? { zhU: 1 } : {}), en: enName, fr: it.fr, c: o.c, r: o.r, l: o.l, s: o.s, lore: lore[it.lore] || un[it.lore] || null, img: !!it.img, game: !!juego.nuevo, src: deepT(juego.f || []) };
 });
 const IDX = L(EX('itemIndex'));
-W('items', 'ITEMS', items);
 
 // ---------- MOBS ----------
 const MB = L(EX('mobs'));
@@ -175,6 +174,27 @@ const itemZhLc = {}; // loot names differ in letter case from item names ("Boar 
 for (const [en, zh] of [...Object.entries(zhExtra), ...items.filter(i => i.zh).map(i => [i.en, i.zh]), ...Object.entries(zhByEn)]) itemZhLc[en.toLowerCase()] = zh;
 const mobs = (MB.get('l') || []).map(m => { const [zh, u] = mobZh(m); const w = wkMob({ zh, nombre: m.nombre }); return { ...deepT(m), zh, ...(u ? { zhU: 1 } : {}), ...(w ? { beh: /動攻擊/.test(w.beh) ? '主動攻擊' : w.beh, stars: w.stars } : {}), botin: (m.botin || []).map(b => { const name = T((loot[b.objeto] || {}).nombre || b.objeto); return { ...b, name, zh: itemZhLc[String(name).toLowerCase()] || null, img: (loot[b.objeto] || {}).img }; }) }; });
 W('mobs', 'MOBS', { zones: zonesEx.map(z => ({ id: z.id, name: T(z.nombre), fr: z.original })), mobs });
+
+// ---------- HOW TO OBTAIN (collected by hand from a friend's guide, raw/acq-*.json, French in-game names) ----------
+const fk = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ​-‍⁠﻿]/g, '').replace(/[’`]/g, "'")
+  .replace(/\((mage|shaman|chaman)\)|\b(mage|shaman)$/g, '').replace(/\b(d'|l'|de|du|des|la|le|les|en|a|au)\b/g, ' ')
+  .replace(/hallebarde/g, 'hallebard').replace(/magiquement/g, 'magique').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).map(w => w.replace(/(e?s|e)$/, '')).join(' ');
+const byFk = {}; for (const it of items) if (it.fr) (byFk[fk(it.fr)] ||= []).push(it);
+const mobByFk = {}; for (const m of mobs) for (const n of [m.original, m.nombre]) if (n) mobByFk[fk(n)] ||= m;
+const PLACE = Object.fromEntries(Object.entries({ 'Forge des Enfers Brisés': '破碎地下世界的熔爐（個人島嶼上的鍛造台）', "Forgeron d'Armes de la Forêt Sucrée": '甜蜜森林的武器鐵匠（第 2 層）', "Forgeron d'Armes devant le Donjon du Tombeau du Nécromancien": '死靈法師之墓地城外的武器鐵匠', 'Marchand de Départ': '起始之城的新手商人', "Marchand devant l'Arène du World Boss Kazor (Palier 1)": '第 1 層世界王 Kazor 競技場前的商人', 'Tutoriel': '新手教學' }).map(([k, v]) => [fk(k), v]));
+const acqZh = n => { const it = (byFk[fk(n)] || [])[0]; return it ? (it.zh || it.en) : /^col$/i.test(n) ? '珂爾' : n; };
+const zhIng = s => (s || '').split('|').map(opt => opt.split('+').map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(\d+)\s+(.+)$/); return m ? `${acqZh(m[2])} ×${m[1]}` : acqZh(x); }).join(' + ')).filter(Boolean).join(' 或 ');
+let acqN = 0;
+for (const f of fs.readdirSync(D).filter(f => /^acq-.*\.json$/.test(f))) for (const a of JSON.parse(fs.readFileSync(D + f, 'utf8')).items) {
+  const its = byFk[fk(a.n)] || []; if (!its.length) continue;
+  const acq = a.m.map(([t, w, x, y, z, price]) => {
+    if (t === 'drop') { const m = mobByFk[fk(w)]; return { t, w: m ? m.zh || m.nombre : w, mob: m?.id }; }
+    return { t, w: PLACE[fk(w)] || w, ...(x != null ? { x, z } : {}), ...(price ? { p: zhIng(price.replace(/^(\d+)\s+/, '$1 ')) } : {}) };
+  });
+  for (const it of its) { it.acq = acq; if (a.ing) it.acqIng = zhIng(a.ing); if (a.t) it.acqTest = 1; acqN++; }
+}
+console.log('how-to-obtain entries', acqN);
+W('items', 'ITEMS', items);
 
 // ---------- GUIDE (argo, already zh) ----------
 W('guide', 'GUIDE', {
