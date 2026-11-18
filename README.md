@@ -20,6 +20,7 @@ node tools/wikigg.js           # 從 raw/wikigg/pages.json 抽出 wiki 中文名
 node tools/build.js site       # 合併資料（需要先把來源資料下載到 raw/）
 node tools/fetch-images.js     # 下載新圖片
 node tools/pack-images.js      # 打包圖片
+python tools/make-tiles.py     # 高清樓層圖（raw/hires/floor-N-*.png）切成地圖分格
 node tools/build-pages.js      # 產生 GitHub Pages 用的 docs/
 ```
 

@@ -157,14 +157,34 @@ $('#btnFloors').onclick = () => {
 };
 $('#modalBody').addEventListener('click', e => { const b = e.target.closest('[data-floor]'); if (!b) return; e.preventDefault(); $('#modal').hidden = true; switchTab('map'); showMap(b.dataset.floor); });
 
+/* high-res floor renders cut into tiles (tools/make-tiles.py); the old single image stays underneath while tiles load */
+let tileLayers = [], lvl = store.get('mapLevel', 'surface');
+const blankTile = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+const TileL = L.TileLayer.extend({ getTileUrl(c) { const k = `${c.z}/${c.x}_${c.y}`; return this.options.have.has(k) ? `tiles/${this.options.fl}/${this.options.layer}/${k}.webp` : blankTile; } });
+function addTiles(id) {
+  const T = (window.TILES || {})[id]; $('#lvlRow').hidden = !(T && T.underground);
+  if (!T) return;
+  for (const layer of ['surface', 'underground']) {
+    const t = T[layer]; if (!t || (layer === 'underground' && lvl !== 'underground')) continue;
+    const b = t.bounds;
+    tileLayers.push(new TileL('', { fl: id, layer, have: new Set(t.tiles), tileSize: 512, minNativeZoom: -3, maxNativeZoom: 0, minZoom: -4, maxZoom: 4, noWrap: true,
+      bounds: [ll(b[0], b[1]), ll(b[2], b[3])], opacity: layer === 'surface' && lvl === 'underground' ? 0.3 : 1, zIndex: layer === 'surface' ? 1 : 2 }).addTo(map));
+  }
+  document.querySelectorAll('#lvlView button').forEach(x => x.classList.toggle('on', x.dataset.l === lvl));
+  overlay?.setOpacity(lvl === 'underground' ? 0.3 : 1);
+}
+$('#lvlView').addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (!b) return; lvl = b.dataset.l; store.set('mapLevel', lvl); tileLayers.forEach(t => map.removeLayer(t)); tileLayers = []; addTiles(cur.id); });
+
 function showMap(id, keepView) {
   const m = mapById[id]; if (!m) return;
   cur = m; sel.value = id;
   if (overlay) map.removeLayer(overlay);
+  tileLayers.forEach(t => map.removeLayer(t)); tileLayers = [];
   Object.values(groups).forEach(g => map.removeLayer(g));
   routeLayer.clearLayers(); groups = {}; markers = {};
   const b = m.bounds;
-  if (m.img && b) { overlay = L.imageOverlay(m.img, [ll(b[0], b[1]), ll(b[2], b[3])]).addTo(map); }
+  if (m.img && b) { overlay = L.imageOverlay(m.img, [ll(b[0], b[1]), ll(b[2], b[3])], { pane: 'tilePane', zIndex: 0 }).addTo(map); }
+  addTiles(id);
   for (const p of ptsByMap[id] || []) {
     const g = groups[p.capa] ||= L.layerGroup();
     let mk;
