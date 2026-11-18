@@ -426,8 +426,9 @@ const acqLine = (a, i) => {
   const near = a.x != null ? nearPt(a.x, a.z) : null;
   const xz = a.x != null ? ` <small class="count">X ${a.x} Z ${a.z}</small>${near ? pin(near) : ` <button class="maplink" data-copy="${a.x} ${a.z}">複製座標</button>`}` : '';
   const mob = a.mob && MOBS.mobs.find(m => m.id === a.mob);
-  if (a.t === 'buy') return `🛒 購買：${esc(a.w)}${a.p ? '，' + esc(a.p) : ''}${xz}`;
-  if (a.t === 'craft') return `⚒️ 製作：${esc(a.w)}${i.acqIng ? `<br><small>材料：${esc(i.acqIng)}</small>` : ''}${xz}`;
+  const who = near && /[^ -ɏ]/.test(pName(near)) && !/[一-鿿]/.test(a.w) ? pName(near) : a.w;
+  if (a.t === 'buy') return `🛒 購買：${esc(who)}${a.p ? '，' + esc(a.p) : ''}${xz}`;
+  if (a.t === 'craft') return `⚒️ 製作：${esc(who)}${i.acqIng ? `<br><small>材料：${esc(i.acqIng)}</small>` : ''}${xz}`;
   if (a.t === 'drop') return `🐾 打倒 ${esc(a.w)} 掉落${mob ? pin([...(mobPts[lc(mob.nombre)] || []), ...(mobPts[lc(mob.zh)] || [])].map(x => ptById[x]).find(Boolean)) : ''}`;
   return `✨ ${esc(a.w)}${xz}`;
 };

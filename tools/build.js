@@ -181,7 +181,7 @@ const fk = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ�
   .replace(/hallebarde/g, 'hallebard').replace(/magiquement/g, 'magique').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).map(w => w.replace(/(e?s|e)$/, '')).join(' ');
 const byFk = {}; for (const it of items) if (it.fr) (byFk[fk(it.fr)] ||= []).push(it);
 const mobByFk = {}; for (const m of mobs) for (const n of [m.original, m.nombre]) if (n) mobByFk[fk(n)] ||= m;
-const PLACE = Object.fromEntries(Object.entries({ 'Forge des Enfers Brisés': '破碎地下世界的熔爐（個人島嶼上的鍛造台）', "Forgeron d'Armes de la Forêt Sucrée": '甜蜜森林的武器鐵匠（第 2 層）', "Forgeron d'Armes devant le Donjon du Tombeau du Nécromancien": '死靈法師之墓地城外的武器鐵匠', 'Marchand de Départ': '起始之城的新手商人', "Marchand devant l'Arène du World Boss Kazor (Palier 1)": '第 1 層世界王 Kazor 競技場前的商人', 'Tutoriel': '新手教學' }).map(([k, v]) => [fk(k), v]));
+const PLACE = Object.fromEntries(Object.entries({ 'Forge des Enfers Brisés': '破碎地下世界的熔爐（個人島嶼上的鍛造台）', "Forgeron d'Armes de la Forêt Sucrée": '甜蜜森林的武器鐵匠（第 2 層）', "Forgeron d'Armes devant le Donjon du Tombeau du Nécromancien": '死靈法師之墓地城外的武器鐵匠', 'Marchand de Départ': '起始之城的新手商人', "Marchand devant l'Arène du World Boss Kazor (Palier 1)": '第 1 層世界王 Kazor 競技場前的商人', 'Tutoriel': '新手教學', "Forgeron d'Armures dans la Forêt Sucrée": '甜蜜森林的防具鐵匠（第 2 層）', "Forgeron d'Armures de la Ville de Départ": '起始之城的防具鐵匠', "Forgeron d'Armures des Bois Anciens": '古木森林的防具鐵匠', 'Plus disponible pour le moment': '目前已無法取得', "Forgeron d'Accessoires de Sylnovar": '希爾諾瓦的飾品鐵匠（第 3 層）', "Marchand d'Accessoires de Kaelor": 'Kaelor 的飾品商人（第 2 層）', "Forgeron d'Accessoires de Urbus": '烏爾巴斯的飾品鐵匠（第 2 層）', 'Artisan de Runes Basiques': '基礎符文工匠', 'Artisan de Runes Complexes': '進階符文工匠', 'Maroquinier': '皮革工匠', "Marchand d'Accessoires": '飾品商人', "Revendeur Bandit d'Accessoires": '強盜飾品商人', "Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante": '廢鐵飾品鐵匠（怪物海灣東北）', "Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire": '鋁土飾品鐵匠（千年猴麵包樹南邊）', "Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran": '不純黑瑪瑙飾品鐵匠（Taran 南邊）', "Forgeron d'Accessoires Secret du Nid de Brasier": '火焰巢穴的隱藏飾品鐵匠', "Forgeron d'Accessoires": '飾品鐵匠' }).map(([k, v]) => [fk(k), v]));
 const acqZh = n => { const it = (byFk[fk(n)] || [])[0]; return it ? (it.zh || it.en) : /^col$/i.test(n) ? '珂爾' : n; };
 const zhIng = s => (s || '').split('|').map(opt => opt.split('+').map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(\d+)\s+(.+)$/); return m ? `${acqZh(m[2])} ×${m[1]}` : acqZh(x); }).join(' + ')).filter(Boolean).join(' 或 ');
 let acqN = 0;
@@ -189,7 +189,7 @@ for (const f of fs.readdirSync(D).filter(f => /^acq-.*\.json$/.test(f))) for (co
   const its = byFk[fk(a.n)] || []; if (!its.length) continue;
   const acq = a.m.map(([t, w, x, y, z, price]) => {
     if (t === 'drop') { const m = mobByFk[fk(w)]; return { t, w: m ? m.zh || m.nombre : w, mob: m?.id }; }
-    return { t, w: PLACE[fk(w)] || w, ...(x != null ? { x, z } : {}), ...(price ? { p: zhIng(price.replace(/^(\d+)\s+/, '$1 ')) } : {}) };
+    return { t, w: PLACE[fk(w)] || w, ...(x != null ? { x, z } : {}), ...(price ? { p: /^[\d.,]+ Col$/.test(price) ? price.replace(',', '.').replace(' Col', ' 珂爾') : zhIng(price) } : {}) };
   });
   for (const it of its) { it.acq = acq; if (a.ing) it.acqIng = zhIng(a.ing); if (a.t) it.acqTest = 1; acqN++; }
 }
